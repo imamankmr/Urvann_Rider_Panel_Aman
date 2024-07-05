@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Checkbox from 'expo-checkbox';
 
 const LoginScreen = ({ navigation }) => {
-  const [driverName, setDriverName] = useState('');
+  const [username, setusername] = useState('');
   const [password, setPassword] = useState('');
 
   const filterInput = (text) => {
@@ -17,12 +17,12 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`http://192.168.0.61:5001/api/login`, { Driver_name: driverName, password });
+      const response = await axios.post(`http://192.168.0.73:5001/api/login`, { username, password });
       if (response.status === 200 && response.data.token) {
-        Alert.alert('Login successful', `Welcome, ${driverName}!`);
+        Alert.alert('Login successful', `Welcome, ${username}!`);
         navigation.reset({
           index: 0,
-          routes: [{ name: 'RiderCodes', params: { driverName } }],
+          routes: [{ name: 'MainTabs', params: { username: username } }],
         });
       }
     } catch (error) {
@@ -52,11 +52,11 @@ const LoginScreen = ({ navigation }) => {
               style={styles.input}
               placeholder="Driver Name"
               placeholderTextColor="#888"
-              value={driverName}
-              onChangeText={(text) => setDriverName(text)}
+              value={username}
+              onChangeText={(text) => setusername(text)}
               autoCapitalize="none"
               autoCorrect={false}
-              //onChangeText={(text) => setDriverName(filterInput(text).toUpperCase())}
+              //onChangeText={(text) => setusername(filterInput(text).toUpperCase())}
             />
             <TextInput
               style={styles.input}

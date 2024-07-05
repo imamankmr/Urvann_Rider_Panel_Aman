@@ -8,25 +8,25 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 
 const Tab = createMaterialTopTabNavigator();
 
-const PayoutTabs = ({ sellerName }) => (
+const PayoutTabs = ({ driverName }) => (
   <Tab.Navigator
     swipeEnabled={false} // Disable swiping between tabs
     screenOptions={{
       swipeEnabled: false, // Move swipeEnabled to screenOptions as well
     }}
   >
-    <Tab.Screen name="Summary" component={SummaryScreen} initialParams={{ sellerName }} />
-    <Tab.Screen name="Refund" component={RefundScreen} initialParams={{ sellerName }} />
-    <Tab.Screen name="Payable" component={PayableScreen} initialParams={{ sellerName }} />
+    <Tab.Screen name="Summary" component={SummaryScreen} initialParams={{ driverName }} />
+    <Tab.Screen name="Refund" component={RefundScreen} initialParams={{ driverName }} />
+    <Tab.Screen name="Payable" component={PayableScreen} initialParams={{ driverName }} />
   </Tab.Navigator>
 );
 
 const PayoutScreen = ({ route }) => {
-  const { sellerName } = route.params;
+  const { driverName } = route.params;
 
   return (
     <NavigationContainer independent={true}>
-      <PayoutTabs sellerName={sellerName} />
+      <PayoutTabs driverName={driverName} />
     </NavigationContainer>
   );
 };

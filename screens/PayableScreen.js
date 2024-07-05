@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
 
 const PayableScreen = ({ route }) => {
-  const { sellerName } = route.params;
+  const { driverName } = route.params;
   const [payables, setPayables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,7 @@ const PayableScreen = ({ route }) => {
   useEffect(() => {
     const fetchPayables = async () => {
       try {
-        const response = await axios.get(`https://urvann-seller-panel-yc3k.onrender.com/api/payable/${sellerName}`);
+        const response = await axios.get(`http://192.168.0.73:5001/api/payable/${driverName}`);
         setPayables(response.data);
         setLoading(false);
       } catch (error) {
@@ -22,7 +22,7 @@ const PayableScreen = ({ route }) => {
     };
 
     fetchPayables();
-  }, [sellerName]);
+  }, [driverName]);
 
   const renderPayableItem = ({ item }) => (
     <View style={styles.row}>
@@ -53,7 +53,7 @@ const PayableScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Payables for {sellerName}</Text>
+      <Text style={styles.title}>Payables for {driverName}</Text>
       <ScrollView horizontal>
         <View>
           <View style={styles.headerRow}>

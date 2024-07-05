@@ -84,18 +84,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-
-// GET /api/sellers
-app.get('/api/sellers', async (req, res) => {
-  try {
-    const sellers = await Route.distinct('seller_name');
-    res.json(sellers);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
 // GET /api/driver/:driver_name/sellers
 app.get('/api/driver/:Driver_name/sellers', async (req, res) => {
   const { Driver_name } = req.params;
@@ -158,14 +146,14 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.get('/api/data/:sellerName', async (req, res) => {
+app.get('/api/data/:driverName', async (req, res) => {
   try {
-    const sellerName = req.params.sellerName;
+    const driverName = req.params.driverName;
 
-    console.log(`Fetching data for seller: ${sellerName}`); // Debugging log
+    console.log(`Fetching data for seller: ${driverName}`); // Debugging log
 
     // Fetch only the Date, Delivered, and Penalty fields
-    const deliveryUpdates = await DeliveryUpdate.find({ 'Seller name': sellerName }, 'Date Delivered Penalty');
+    const deliveryUpdates = await DeliveryUpdate.find({ 'Seller name': driverName }, 'Date Delivered Penalty');
 
     console.log('Fetched data:', deliveryUpdates); // Debugging log
 
@@ -178,12 +166,12 @@ app.get('/api/data/:sellerName', async (req, res) => {
 
 // Endpoint for Summary
 // Endpoint for Summary
-app.get('/api/summary/:sellerName', async (req, res) => {
+app.get('/api/summary/:driverName', async (req, res) => {
   try {
-    const sellerName = req.params.sellerName;
-    console.log(`Fetching summary for seller: ${sellerName}`);
+    const driverName = req.params.driverName;
+    console.log(`Fetching summary for seller: ${driverName}`);
 
-    const summary = await Summary.findOne({ Name: sellerName });
+    const summary = await Summary.findOne({ Name: driverName });
 
     if (!summary) {
       console.log('Summary not found');
@@ -198,10 +186,10 @@ app.get('/api/summary/:sellerName', async (req, res) => {
 });
 
 // Endpoint for Refund
-app.get('/api/refund/:sellerName', async (req, res) => {
+app.get('/api/refund/:driverName', async (req, res) => {
   try {
-    const sellerName = req.params.sellerName;
-    const refunds = await Refund.find({ Seller: sellerName });
+    const driverName = req.params.driverName;
+    const refunds = await Refund.find({ Seller: driverName });
 
     res.json(refunds);
   } catch (err) {
@@ -211,10 +199,10 @@ app.get('/api/refund/:sellerName', async (req, res) => {
 });
 
 // Endpoint for Payable
-app.get('/api/payable/:sellerName', async (req, res) => {
+app.get('/api/payable/:driverName', async (req, res) => {
   try {
-    const sellerName = req.params.sellerName;
-    const payables = await Payable.find({ seller_name: sellerName });
+    const driverName = req.params.driverName;
+    const payables = await Payable.find({ seller_name: driverName });
 
     res.json(payables);
   } catch (err) {

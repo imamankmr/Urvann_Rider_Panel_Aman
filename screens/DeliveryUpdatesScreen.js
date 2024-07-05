@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
 
 const DeliveryUpdatesScreen = ({ route }) => {
-  const { sellerName } = route.params;
+  const { driverName } = route.params;
   const [deliveryUpdates, setDeliveryUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,7 @@ const DeliveryUpdatesScreen = ({ route }) => {
   useEffect(() => {
     const fetchDeliveryUpdates = async () => {
       try {
-        const response = await axios.get(`https://urvann-seller-panel-yc3k.onrender.com/api/data/${sellerName}`);
+        const response = await axios.get(`http://192.168.0.73:5001/api/data/${driverName}`);
         setDeliveryUpdates(response.data.deliveryUpdates);
         setLoading(false);
       } catch (error) {
@@ -22,7 +22,7 @@ const DeliveryUpdatesScreen = ({ route }) => {
     };
 
     fetchDeliveryUpdates();
-  }, [sellerName]);
+  }, [driverName]);
 
   const renderItem = ({ item }) => (
     <View style={styles.row}>
@@ -51,7 +51,7 @@ const DeliveryUpdatesScreen = ({ route }) => {
   return (
     <ScrollView horizontal>
       <View style={styles.container}>
-        <Text style={styles.title}>Delivery Updates for {sellerName}</Text>
+        <Text style={styles.title}>Delivery Updates for {driverName}</Text>
         <View>
           <View style={styles.headerRow}>
             <Text style={styles.headerCell}>Date</Text>

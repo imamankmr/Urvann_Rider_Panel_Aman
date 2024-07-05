@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import axios from 'axios';
 
 const SummaryScreen = ({ route }) => {
-  const { sellerName } = route.params;
+  const { driverName } = route.params;
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,7 @@ const SummaryScreen = ({ route }) => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await axios.get(`https://urvann-seller-panel-yc3k.onrender.com/api/summary/${sellerName}`);
+        const response = await axios.get(`http://192.168.0.73:5001/api/summary/${driverName}`);
         setSummary(response.data);
         setLoading(false);
       } catch (error) {
@@ -22,7 +22,7 @@ const SummaryScreen = ({ route }) => {
     };
 
     fetchSummary();
-  }, [sellerName]);
+  }, [driverName]);
 
   if (loading) {
     return (
@@ -42,7 +42,7 @@ const SummaryScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Summary for {sellerName}</Text>
+      <Text style={styles.title}>Summary for {driverName}</Text>
       <View style={styles.summaryContainer}>
         <View style={styles.row}>
           <Text style={styles.headerCell}>Name</Text>

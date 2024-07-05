@@ -11,7 +11,7 @@ const RiderCodesScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    axios.get(`http://192.168.0.61:5001/api/driver/${driverName}/sellers`)
+    axios.get(`http://192.168.0.73:5001/api/driver/${driverName}/sellers`)
       .then(response => setSellers(response.data))
       .catch(error => console.error(`Error fetching seller names for ${driverName}:`, error));
   }, [driverName]);

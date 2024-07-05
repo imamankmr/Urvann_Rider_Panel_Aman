@@ -8,7 +8,7 @@ import RiderCodesScreen from './RiderCodesScreen';
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = ({ route }) => {
-  const sellerName = route?.params?.sellerName ?? 'defaultSellerName';
+  const driverName = route?.params?.driverName ?? 'defaultDriverName';
 
   return (
     <Tab.Navigator
@@ -45,9 +45,9 @@ const MainTabNavigator = ({ route }) => {
         },
       })}
     >
-      <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ sellerName }} />
-      <Tab.Screen name="Pickup" component={RiderCodesScreen} initialParams={{ sellerName }} />
-      <Tab.Screen name="Delivery Updates" component={DeliveryUpdatesScreen} initialParams={{ sellerName }} />
+      <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />
+      <Tab.Screen name="Pickup" component={RiderCodesScreen} initialParams={{ driverName }} />
+      <Tab.Screen name="Delivery Updates" component={DeliveryUpdatesScreen} initialParams={{ driverName }} />
     </Tab.Navigator>
   );
 };

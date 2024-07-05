@@ -5,7 +5,7 @@ import MainTabNavigator from './screens/MainTabNavigator';
 import ProductDetailsScreen from './screens/ProductDetailsScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import RiderCodesScreen from './screens/RiderCodesScreen';
 
 const Stack = createStackNavigator();
 
@@ -25,9 +25,9 @@ const App = () => {
       <Stack.Navigator initialRouteName="Login" screenOptions={screenOptions}>
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
         <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Register' }} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ title: 'Product Details' }} />
+        <Stack.Screen name="SellerName" component={RiderCodesScreen} options={{ title: 'Seller Name' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

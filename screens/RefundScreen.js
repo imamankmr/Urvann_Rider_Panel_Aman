@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
 
 const RefundScreen = ({ route }) => {
-  const { sellerName } = route.params;
+  const { driverName } = route.params;
   const [refunds, setRefunds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,7 @@ const RefundScreen = ({ route }) => {
   useEffect(() => {
     const fetchRefunds = async () => {
       try {
-        const response = await axios.get(`https://urvann-seller-panel-yc3k.onrender.com/api/refund/${sellerName}`);
+        const response = await axios.get(`http://192.168.0.73:5001/api/refund/${driverName}`);
         setRefunds(response.data);
         setLoading(false);
       } catch (error) {
@@ -22,7 +22,7 @@ const RefundScreen = ({ route }) => {
     };
 
     fetchRefunds();
-  }, [sellerName]);
+  }, [driverName]);
 
   const renderRefundItem = ({ item }) => (
     <View style={styles.row}>
@@ -54,7 +54,7 @@ const RefundScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Refunds for {sellerName}</Text>
+      <Text style={styles.title}>Refunds for {driverName}</Text>
       <ScrollView horizontal>
         <View>
           <View style={styles.headerRow}>
