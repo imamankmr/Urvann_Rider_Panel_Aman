@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const payableSchema = new mongoose.Schema({
   order_id: Number,
-  seller_name: String,
+  'Driver Name': String,
   created_on: String,
   line_item_name: String,
   line_item_price: Number,

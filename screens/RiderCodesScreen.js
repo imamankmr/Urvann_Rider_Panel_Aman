@@ -1,4 +1,3 @@
-import { API_BASE_URL } from '@env';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import axios from 'axios';
@@ -11,13 +10,15 @@ const RiderCodesScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    axios.get(`http://192.168.0.73:5001/api/driver/${driverName}/sellers`)
-      .then(response => setSellers(response.data))
+    axios.get(`http://192.168.1.6:5001/api/driver/${driverName}/sellers`)
+      .then(response => {
+        console.log('Sellers response:', response.data); // Add this line
+        setSellers(response.data);
+      })
       .catch(error => console.error(`Error fetching seller names for ${driverName}:`, error));
   }, [driverName]);
-
   const handleSellerPress = (sellerName) => {
-    navigation.navigate('ProductDetails', { sellerName, driverName });
+    navigation.navigate('ProductDetails', { driverName, sellerName});
   };
 
   return (

@@ -59,11 +59,11 @@ app.post('/api/register', async (req, res) => {
 // Login route
 // Login route
 app.post('/api/login', async (req, res) => {
-  const { Driver_name, password } = req.body;
+  const { username, password } = req.body;
 
   try {
     // Check if user exists
-    const user = await User.findOne({ Driver_name });
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ message: 'Driver not found' });
     }
@@ -85,63 +85,83 @@ app.post('/api/login', async (req, res) => {
 });
 
 // GET /api/driver/:driver_name/sellers
-app.get('/api/driver/:Driver_name/sellers', async (req, res) => {
-  const { Driver_name } = req.params;
+app.get('/api/driver/:driverName/sellers', async (req, res) => {
+  const { driverName } = req.params;
+  console.log(`Fetching sellers for driver: ${driverName}`); // Add this line
+
   try {
-    const sellers = await Route.find({ 'Driver Name': Driver_name }).distinct('seller_name');
+    const sellers = await Route.find({ 'Driver Name': driverName }).distinct('seller_name');
+    console.log('Sellers found:', sellers); // Add this line
     res.json(sellers);
   } catch (error) {
-    console.error(error);
+    console.error(`Error fetching seller names for ${driverName}:`, error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
 
 // GET /api/products
+// Ensure the indexes are properly set on the MongoDB collections for faster querying
+
 app.get('/api/products', async (req, res) => {
   const { seller_name, rider_code } = req.query;
 
-    // Adjusted query to handle case sensitivity and exact match issues
-    try {
-      // Adjusted query to handle exact matches using regex anchors
-      const filteredData = await Route.find({
-        seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') }, // Exact case insensitive match
-        "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') } // Exact case insensitive match
-      });
-    
-    // Fetch all photos from the database
-    const photos = await Photo.find();
+  try {
+    const filteredData = await Route.find({
+      seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
+      "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
+    });
 
-    // Create a map of SKU to image URL
+    const photos = await Photo.find();
     const photoMap = {};
     photos.forEach(photo => {
       photoMap[photo.sku] = photo.image_url;
     });
 
-    // Merge filtered data with photo URLs
-    const mergedData = filteredData.map(data => ({
-      ...data._doc,
-      image1: photoMap[data.line_item_sku] || null
-    }));
-
-    // Calculate order code quantities
-    const orderCodeQuantities = mergedData.reduce((acc, data) => {
-      acc[data.FINAL] = (acc[data.FINAL] || 0) + data.total_item_quantity;
-      return acc;
-    }, {});
-
-    // Prepare products response
-    const products = mergedData.map(data => ({
+    const products = filteredData.map(data => ({
       FINAL: data.FINAL,
       line_item_sku: data.line_item_sku,
       line_item_name: data.line_item_name,
-      image1: data.image1,
-      total_item_quantity: data.total_item_quantity
+      image1: photoMap[data.line_item_sku] || null,
+      total_item_quantity: data.total_item_quantity,
+      "Pickup Status": data["Pickup Status"]
     }));
+
+    const orderCodeQuantities = products.reduce((acc, product) => {
+      acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
+      return acc;
+    }, {});
 
     res.json({ orderCodeQuantities, products });
   } catch (error) {
     console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/update-pickup-status', async (req, res) => {
+  const { sku, status } = req.body;
+
+  try {
+    await Route.updateOne({ line_item_sku: sku }, { $set: { "Pickup Status": status } });
+    res.status(200).json({ message: 'Pickup status updated successfully' });
+  } catch (error) {
+    console.error('Error updating pickup status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/update-pickup-status-bulk', async (req, res) => {
+  const { sellerName, driverName, status } = req.body;
+
+  try {
+    await Route.updateMany(
+      { seller_name: sellerName, "Driver Name": driverName },
+      { $set: { "Pickup Status": status } }
+    );
+    res.status(200).json({ message: 'Pickup status updated successfully for all products' });
+  } catch (error) {
+    console.error('Error updating pickup status:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -153,7 +173,7 @@ app.get('/api/data/:driverName', async (req, res) => {
     console.log(`Fetching data for seller: ${driverName}`); // Debugging log
 
     // Fetch only the Date, Delivered, and Penalty fields
-    const deliveryUpdates = await DeliveryUpdate.find({ 'Seller name': driverName }, 'Date Delivered Penalty');
+    const deliveryUpdates = await DeliveryUpdate.find({ 'Driver Name': driverName }, 'Date Delivered Penalty');
 
     console.log('Fetched data:', deliveryUpdates); // Debugging log
 
@@ -189,7 +209,7 @@ app.get('/api/summary/:driverName', async (req, res) => {
 app.get('/api/refund/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
-    const refunds = await Refund.find({ Seller: driverName });
+    const refunds = await Refund.find({ Driver: driverName });
 
     res.json(refunds);
   } catch (err) {
@@ -202,7 +222,7 @@ app.get('/api/refund/:driverName', async (req, res) => {
 app.get('/api/payable/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
-    const payables = await Payable.find({ seller_name: driverName });
+    const payables = await Payable.find({ 'Driver Name': driverName });
 
     res.json(payables);
   } catch (err) {
@@ -210,6 +230,8 @@ app.get('/api/payable/:driverName', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 
 const PORT = process.env.PORT || 5001;

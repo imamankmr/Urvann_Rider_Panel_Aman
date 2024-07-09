@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const refundSchema = new mongoose.Schema({
   order_id: Number,
   "SKU id": String,
-  Seller: String,
+  Driver: String,
   line_item_name: String,
   "Product amount": Number,
   Qty: Number,

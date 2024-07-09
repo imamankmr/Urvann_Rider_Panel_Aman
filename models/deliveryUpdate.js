@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const deliveryUpdatesSchema = new mongoose.Schema({
   Date: Date,
-  'Seller name': String,
+  'Driver Name': String,
   Delivered: Number,
   Penalty: Number,
 });
