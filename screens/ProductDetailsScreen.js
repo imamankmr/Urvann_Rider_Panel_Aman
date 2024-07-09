@@ -15,7 +15,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.6:5001/api/products`, {
+        const response = await axios.get(`http://192.168.1.5:5001/api/products`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -43,7 +43,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(!selectAll);
 
     try {
-      await axios.post('http://192.168.1.6:5001/api/update-pickup-status-bulk', {
+      await axios.post('http://192.168.1.5:5001/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         status: newStatus
@@ -75,7 +75,7 @@ const ProductDetailsScreen = ({ route }) => {
     try {
       const productToUpdate = products.find(product => product.line_item_sku === sku);
       const newStatus = productToUpdate["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
-      await axios.post('http://192.168.1.6:5001/api/update-pickup-status', {
+      await axios.post('http://192.168.1.5:5001/api/update-pickup-status', {
         sku,
         status: newStatus
       });
