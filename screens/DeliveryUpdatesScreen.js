@@ -11,7 +11,7 @@ const DeliveryUpdatesScreen = ({ route }) => {
   useEffect(() => {
     const fetchDeliveryUpdates = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.5:5001/api/data/${driverName}`);
+        const response = await axios.get(`http://192.168.29.209:5001/api/data/${driverName}`);
         setDeliveryUpdates(response.data.deliveryUpdates);
         setLoading(false);
       } catch (error) {

@@ -140,16 +140,31 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/update-pickup-status', async (req, res) => {
-  const { sku, status } = req.body;
+  const { sku, orderCode, status } = req.body;
 
   try {
-    await Route.updateOne({ line_item_sku: sku }, { $set: { "Pickup Status": status } });
+    // Ensure both SKU and order code are provided
+    if (!sku || !orderCode) {
+      return res.status(400).json({ message: 'SKU and Order Code are required' });
+    }
+
+    // Update the pickup status based on SKU and order code
+    const result = await Route.updateOne(
+      { line_item_sku: sku, FINAL: orderCode },
+      { $set: { "Pickup Status": status } }
+    );
+
+    if (result.nModified === 0) {
+      return res.status(404).json({ message: 'No matching document found to update' });
+    }
+
     res.status(200).json({ message: 'Pickup status updated successfully' });
   } catch (error) {
     console.error('Error updating pickup status:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 app.post('/api/update-pickup-status-bulk', async (req, res) => {
   const { sellerName, driverName, status } = req.body;

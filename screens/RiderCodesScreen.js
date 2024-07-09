@@ -10,7 +10,7 @@ const RiderCodesScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    axios.get(`http://192.168.1.5:5001/api/driver/${driverName}/sellers`)
+    axios.get(`http://192.168.29.209:5001/api/driver/${driverName}/sellers`)
       .then(response => {
         console.log('Sellers response:', response.data); // Add this line
         setSellers(response.data);

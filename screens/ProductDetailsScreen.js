@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const ProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName } = route.params;
@@ -15,7 +16,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.5:5001/api/products`, {
+        const response = await axios.get(`http://192.168.29.209:5001/api/products`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -43,12 +44,11 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(!selectAll);
 
     try {
-      await axios.post('http://192.168.1.5:5001/api/update-pickup-status-bulk', {
+      await axios.post('http://192.168.29.209:5001/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         status: newStatus
       });
-      // Update frontend state after successful update
       setProducts(prevProducts =>
         prevProducts.map(product => ({
           ...product,
@@ -60,23 +60,27 @@ const ProductDetailsScreen = ({ route }) => {
     }
   };
 
-  const toggleProductStatus = async (sku) => {
-    setProducts(prevProducts => {
-      const updatedProducts = prevProducts.map(product => {
-        if (product.line_item_sku === sku) {
-          const newStatus = product["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
-          return { ...product, "Pickup Status": newStatus };
-        }
-        return product;
-      });
-      return updatedProducts;
+  const toggleProductStatus = async (sku, orderCode) => {
+    const updatedProducts = products.map(product => {
+      if (product.line_item_sku === sku && product.FINAL === orderCode) {
+        const newStatus = product["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
+        return { ...product, "Pickup Status": newStatus };
+      }
+      return product;
     });
 
+    setProducts(updatedProducts);
+
     try {
-      const productToUpdate = products.find(product => product.line_item_sku === sku);
-      const newStatus = productToUpdate["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
-      await axios.post('http://192.168.1.5:5001/api/update-pickup-status', {
+      const productToUpdate = updatedProducts.find(product => product.line_item_sku === sku && product.FINAL === orderCode);
+      if (!productToUpdate) {
+        console.error(`Product with SKU ${sku} and order code ${orderCode} not found.`);
+        return;
+      }
+      const newStatus = productToUpdate["Pickup Status"];
+      await axios.post('http://192.168.29.209:5001/api/update-pickup-status', {
         sku,
+        orderCode,
         status: newStatus
       });
     } catch (error) {
@@ -105,7 +109,7 @@ const ProductDetailsScreen = ({ route }) => {
           <Text style={styles.selectAllText}>{selectAll ? "Unselect All" : "Select All"}</Text>
         </TouchableOpacity>
         {groupedProducts[finalCode].map((product, index) => (
-          <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku)}>
+          <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
             <View style={[styles.productContainer, product["Pickup Status"] === "Picked" ? styles.picked : styles.notPicked]}>
               <TouchableOpacity onPress={() => handleImagePress(product)}>
                 <Image source={{ uri: product.image1 }} style={styles.image} />
@@ -114,6 +118,9 @@ const ProductDetailsScreen = ({ route }) => {
                 <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
                 <Text style={styles.text}>Name: {product.line_item_name}</Text>
                 <Text style={styles.text}>Quantity: {product.total_item_quantity}</Text>
+                <Text style={[styles.statusText, product["Pickup Status"] === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+                  {product["Pickup Status"]}
+                </Text>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -149,7 +156,6 @@ const ProductDetailsScreen = ({ route }) => {
                 <Text style={styles.modalText}>SKU: {selectedProduct.line_item_sku}</Text>
                 <Text style={styles.modalText}>Name: {selectedProduct.line_item_name}</Text>
                 <Text style={styles.modalText}>Quantity: {selectedProduct.total_item_quantity}</Text>
-                {/* Add other product details here */}
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -236,6 +242,17 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     marginBottom: 5,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  pickedStatus: {
+    color: '#28a745',
+  },
+  notPickedStatus: {
+    color: '#dc3545',
   },
   modalContainer: {
     flex: 1,

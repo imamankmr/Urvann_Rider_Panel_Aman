@@ -11,7 +11,7 @@ const PayableScreen = ({ route }) => {
   useEffect(() => {
     const fetchPayables = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.5:5001/api/payable/${driverName}`);
+        const response = await axios.get(`http://192.168.29.209:5001/api/payable/${driverName}`);
         setPayables(response.data);
         setLoading(false);
       } catch (error) {
