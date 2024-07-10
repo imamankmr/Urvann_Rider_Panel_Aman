@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import LazyLoad from 'react-lazyload';
-import FastImage from 'react-native-fast-image';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const ProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName } = route.params;
@@ -17,7 +16,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.6:5001/api/products`, {
+        const response = await axios.get(`https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/products`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -35,12 +34,17 @@ const ProductDetailsScreen = ({ route }) => {
     fetchProducts();
   }, [sellerName, driverName]);
 
-  const toggleSelectAll = useCallback(async () => {
+  const handleImagePress = (product) => {
+    setSelectedProduct(product);
+    setModalVisible(true);
+  };
+
+  const toggleSelectAll = async () => {
     const newStatus = !selectAll ? "Picked" : "Not Picked";
     setSelectAll(!selectAll);
 
     try {
-      await axios.post('http://192.168.1.6:5001/api/update-pickup-status-bulk', {
+      await axios.post('https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         status: newStatus
@@ -54,9 +58,9 @@ const ProductDetailsScreen = ({ route }) => {
     } catch (error) {
       console.error('Error updating pickup status in bulk:', error);
     }
-  }, [selectAll, sellerName, driverName]);
+  };
 
-  const toggleProductStatus = useCallback(async (sku, orderCode) => {
+  const toggleProductStatus = async (sku, orderCode) => {
     const updatedProducts = products.map(product => {
       if (product.line_item_sku === sku && product.FINAL === orderCode) {
         const newStatus = product["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
@@ -74,7 +78,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('http://192.168.1.6:5001/api/update-pickup-status', {
+      await axios.post('https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/update-pickup-status', {
         sku,
         orderCode,
         status: newStatus
@@ -82,12 +86,7 @@ const ProductDetailsScreen = ({ route }) => {
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
-  }, [products]);
-
-  const handleImagePress = useCallback((product) => {
-    setSelectedProduct(product);
-    setModalVisible(true);
-  }, []);
+  };
 
   const renderProducts = useCallback(() => {
     const groupedProducts = {};
@@ -112,17 +111,15 @@ const ProductDetailsScreen = ({ route }) => {
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
             <View style={[styles.productContainer, product["Pickup Status"] === "Picked" ? styles.picked : styles.notPicked]}>
-              <LazyLoad height={80}>
-                <TouchableOpacity onPress={() => handleImagePress(product)}>
-                  {product.image1 ? (
-                    <FastImage source={{ uri: product.image1 }} style={styles.image} resizeMode={FastImage.resizeMode.cover} />
-                  ) : (
-                    <View style={styles.imagePlaceholder}>
-                      <Text style={styles.imagePlaceholderText}>Image not available</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </LazyLoad>
+              <TouchableOpacity onPress={() => handleImagePress(product)}>
+                {product.image1 ? (
+                  <Image source={{ uri: product.image1 }} style={styles.image} />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imagePlaceholderText}>Image not available</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <View style={styles.textContainer}>
                 <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
                 <Text style={styles.text}>Name: {product.line_item_name}</Text>
@@ -136,7 +133,7 @@ const ProductDetailsScreen = ({ route }) => {
         ))}
       </ScrollView>
     ));
-  }, [products, orderCodeQuantities, selectAll, toggleSelectAll, toggleProductStatus, handleImagePress]);
+  }, [products, orderCodeQuantities, selectAll]);
 
   if (loading) {
     return (
@@ -162,7 +159,7 @@ const ProductDetailsScreen = ({ route }) => {
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 {selectedProduct.image1 ? (
-                  <FastImage source={{ uri: selectedProduct.image1 }} style={styles.fullScreenImage} resizeMode={FastImage.resizeMode.contain} />
+                  <Image source={{ uri: selectedProduct.image1 }} style={styles.fullScreenImage} />
                 ) : (
                   <View style={styles.fullScreenImagePlaceholder}>
                     <Text style={styles.imagePlaceholderText}>Image not available</Text>
@@ -183,87 +180,104 @@ const ProductDetailsScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#fff',
+    paddingTop: 20,
   },
   scrollViewContainer: {
-    flexGrow: 1,
+    paddingBottom: 20,
+    paddingTop: 10,
+    backgroundColor: '#fff',
   },
   orderContainer: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#E0E0E0',
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    width: '90%',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  selectAllContainer: {
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    width: '90%',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  selectAllText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   header: {
     fontSize: 20,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   subHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  selectAllContainer: {
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  selectAllText: {
-    fontSize: 16,
-    color: '#007BFF',
+    fontSize: 20,
+    color: '#555',
+    textAlign: 'center',
   },
   productContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginVertical: 10,
+    marginBottom: 10,
     padding: 10,
-    backgroundColor: '#FFFFFF',
+    borderColor: '#ccc',
+    borderWidth: 1,
     borderRadius: 5,
-    elevation: 3,
+    width: '90%',
+    alignSelf: 'center',
+    alignItems: 'center',
   },
   picked: {
-    backgroundColor: '#DFF0D8',
+    backgroundColor: '#d4edda',
   },
   notPicked: {
-    backgroundColor: '#F8D7DA',
+    backgroundColor: '#f9f9f9',
   },
   image: {
-    width: 80,
-    height: 80,
-    borderRadius: 5,
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
     marginRight: 10,
   },
   imagePlaceholder: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#CCCCCC',
-    borderRadius: 5,
+    width: 100,
+    height: 100,
+    marginRight: 10,
+    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   imagePlaceholderText: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: '#999',
   },
   textContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   text: {
-    fontSize: 14,
-    marginBottom: 2,
+    fontSize: 16,
+    marginBottom: 5,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
+    marginTop: 5,
   },
   pickedStatus: {
-    color: '#28A745',
+    color: '#28a745',
   },
   notPickedStatus: {
-    color: '#DC3545',
+    color: '#333',
   },
-  wrapper: {},
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -275,26 +289,23 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
-    elevation: 5,
-    minWidth: '80%',
   },
   fullScreenImage: {
     width: '100%',
-    height: '80%',
+    height: 300,
     resizeMode: 'contain',
-    marginBottom: 10,
-    borderRadius: 10,
+    marginBottom: 20,
   },
   fullScreenImagePlaceholder: {
     width: '100%',
-    height: '80%',
+    height: 300,
     backgroundColor: '#f0f0f0',
-    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
   },
   modalText: {
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 10,
   },
 });
