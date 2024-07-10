@@ -16,30 +16,12 @@ app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
 
 // MongoDB connection URI
-mongoose.connect('mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannRiderApp?retryWrites=true&w=majority&appName=UrvannGenie', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannRiderApp?retryWrites=true&w=majority&appName=UrvannGenie';
 
-const db = mongoose.connection;
-
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', async () => {
-  console.log('Connected to MongoDB');
-
-  try {
-    // Create indexes in MongoDB
-    await Route.createIndexes({
-      seller_name: 1,
-      'Driver Name': 1,
-      line_item_sku: 1,
-      FINAL: 1
-    });
-    console.log('Indexes created successfully');
-  } catch (error) {
-    console.error('Error creating indexes:', error);
-  }
-});
+// Connect to MongoDB
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error(err));
 
 // Hardcoded JWT secret key (use this only for development/testing)
 const JWT_SECRET = 'your_secret_key'; // Replace 'your_secret_key' with a strong secret key
@@ -74,6 +56,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// Login route
 // Login route
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
@@ -127,6 +110,8 @@ app.get('/api/driver/:driverName/sellers', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
 
 // GET /api/products
 app.get('/api/products', async (req, res) => {
