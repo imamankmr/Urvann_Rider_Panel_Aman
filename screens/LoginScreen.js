@@ -17,7 +17,7 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`http://192.168.29.209:5001/api/login`, { username, password });
+      const response = await axios.post(`http://192.168.1.6:5001/api/login`, { username, password });
       if (response.status === 200 && response.data.token) {
         Alert.alert('Login successful', `Welcome, ${username}!`);
         navigation.reset({

@@ -16,12 +16,30 @@ app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
 
 // MongoDB connection URI
-const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannRiderApp?retryWrites=true&w=majority&appName=UrvannGenie';
+mongoose.connect('mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannRiderApp?retryWrites=true&w=majority&appName=UrvannGenie', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
-// Connect to MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error(err));
+const db = mongoose.connection;
+
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', async () => {
+  console.log('Connected to MongoDB');
+
+  try {
+    // Create indexes in MongoDB
+    await Route.createIndexes({
+      seller_name: 1,
+      'Driver Name': 1,
+      line_item_sku: 1,
+      FINAL: 1
+    });
+    console.log('Indexes created successfully');
+  } catch (error) {
+    console.error('Error creating indexes:', error);
+  }
+});
 
 // Hardcoded JWT secret key (use this only for development/testing)
 const JWT_SECRET = 'your_secret_key'; // Replace 'your_secret_key' with a strong secret key
@@ -57,7 +75,6 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Login route
-// Login route
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -84,25 +101,34 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// GET /api/driver/:driver_name/sellers
+// GET /api/driver/:driverName/sellers
 app.get('/api/driver/:driverName/sellers', async (req, res) => {
   const { driverName } = req.params;
-  console.log(`Fetching sellers for driver: ${driverName}`); // Add this line
+  console.log(`Fetching sellers for driver: ${driverName}`);
 
   try {
     const sellers = await Route.find({ 'Driver Name': driverName }).distinct('seller_name');
-    console.log('Sellers found:', sellers); // Add this line
-    res.json(sellers);
+
+    const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
+      const productCount = await Route.aggregate([
+        { $match: { 'Driver Name': driverName, seller_name: sellerName } },
+        { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
+      ]);
+      return {
+        sellerName,
+        productCount: productCount[0] ? productCount[0].totalQuantity : 0
+      };
+    }));
+
+    console.log('Sellers with counts:', sellersWithCounts);
+    res.json(sellersWithCounts);
   } catch (error) {
-    console.error(`Error fetching seller names for ${driverName}:`, error);
+    console.error(`Error fetching seller names and counts for ${driverName}:`, error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-
 // GET /api/products
-// Ensure the indexes are properly set on the MongoDB collections for faster querying
-
 app.get('/api/products', async (req, res) => {
   const { seller_name, rider_code } = req.query;
 
@@ -110,9 +136,10 @@ app.get('/api/products', async (req, res) => {
     const filteredData = await Route.find({
       seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
       "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
-    });
+    }).lean(); // Use .lean() for faster read operation
 
-    const photos = await Photo.find();
+    const photos = await Photo.find().lean(); // Fetch photos
+
     const photoMap = {};
     photos.forEach(photo => {
       photoMap[photo.sku] = photo.image_url;
@@ -139,6 +166,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+// POST /api/update-pickup-status
 app.post('/api/update-pickup-status', async (req, res) => {
   const { sku, orderCode, status } = req.body;
 
@@ -165,7 +193,7 @@ app.post('/api/update-pickup-status', async (req, res) => {
   }
 });
 
-
+// POST /api/update-pickup-status-bulk
 app.post('/api/update-pickup-status-bulk', async (req, res) => {
   const { sellerName, driverName, status } = req.body;
 
@@ -181,6 +209,7 @@ app.post('/api/update-pickup-status-bulk', async (req, res) => {
   }
 });
 
+// GET /api/data/:driverName
 app.get('/api/data/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
@@ -199,7 +228,6 @@ app.get('/api/data/:driverName', async (req, res) => {
   }
 });
 
-// Endpoint for Summary
 // Endpoint for Summary
 app.get('/api/summary/:driverName', async (req, res) => {
   try {
@@ -224,7 +252,9 @@ app.get('/api/summary/:driverName', async (req, res) => {
 app.get('/api/refund/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
-    const refunds = await Refund.find({ Driver: driverName });
+    console.log(`Fetching refund for seller: ${driverName}`);
+
+    const refunds = await Refund.find({ seller_name: driverName });
 
     res.json(refunds);
   } catch (err) {
@@ -237,7 +267,9 @@ app.get('/api/refund/:driverName', async (req, res) => {
 app.get('/api/payable/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
-    const payables = await Payable.find({ 'Driver Name': driverName });
+    console.log(`Fetching payable for seller: ${driverName}`);
+
+    const payables = await Payable.find({ seller_name: driverName });
 
     res.json(payables);
   } catch (err) {
@@ -246,8 +278,7 @@ app.get('/api/payable/:driverName', async (req, res) => {
   }
 });
 
-
-
-
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Server listening on port 5000
+app.listen(5001, () => {
+  console.log('Server is running on http://localhost:5001');
+});

@@ -10,15 +10,16 @@ const RiderCodesScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    axios.get(`http://192.168.29.209:5001/api/driver/${driverName}/sellers`)
+    axios.get(`http://192.168.1.6:5001/api/driver/${driverName}/sellers`)
       .then(response => {
-        console.log('Sellers response:', response.data); // Add this line
+        console.log('Sellers response:', response.data);
         setSellers(response.data);
       })
       .catch(error => console.error(`Error fetching seller names for ${driverName}:`, error));
   }, [driverName]);
+
   const handleSellerPress = (sellerName) => {
-    navigation.navigate('ProductDetails', { driverName, sellerName});
+    navigation.navigate('ProductDetails', { driverName, sellerName });
   };
 
   return (
@@ -28,10 +29,13 @@ const RiderCodesScreen = () => {
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleSellerPress(item)}>
+          <TouchableOpacity onPress={() => handleSellerPress(item.sellerName)}>
             <View style={styles.tile}>
               <Text style={styles.text}>
-                {item}
+                {item.sellerName}
+              </Text>
+              <Text style={styles.productCount}>
+                {item.productCount} {item.productCount === 1 ? 'item' : 'items'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -66,7 +70,6 @@ const styles = StyleSheet.create({
   },
   productCount: {
     fontSize: 18,
-    fontWeight: 'bold',
     color: '#333',
     marginRight: 10,
   },
