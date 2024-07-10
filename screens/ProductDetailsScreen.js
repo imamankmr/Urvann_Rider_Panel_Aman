@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
@@ -16,7 +17,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/products`, {
+        const response = await axios.get(`http://192.168.1.6:5001/api/products`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -44,7 +45,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(!selectAll);
 
     try {
-      await axios.post('https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/update-pickup-status-bulk', {
+      await axios.post('http://192.168.1.6:5001/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         status: newStatus
@@ -78,7 +79,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/update-pickup-status', {
+      await axios.post('http://192.168.1.6:5001/api/update-pickup-status', {
         sku,
         orderCode,
         status: newStatus
@@ -111,14 +112,8 @@ const ProductDetailsScreen = ({ route }) => {
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
             <View style={[styles.productContainer, product["Pickup Status"] === "Picked" ? styles.picked : styles.notPicked]}>
-              <TouchableOpacity onPress={() => handleImagePress(product)}>
-                {product.image1 ? (
-                  <Image source={{ uri: product.image1 }} style={styles.image} />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <Text style={styles.imagePlaceholderText}>Image not available</Text>
-                  </View>
-                )}
+            <TouchableOpacity onPress={() => handleImagePress(product)}>
+                <Image source={{ uri: product.image1 }} style={styles.image} />
               </TouchableOpacity>
               <View style={styles.textContainer}>
                 <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
@@ -158,13 +153,7 @@ const ProductDetailsScreen = ({ route }) => {
           <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
-                {selectedProduct.image1 ? (
-                  <Image source={{ uri: selectedProduct.image1 }} style={styles.fullScreenImage} />
-                ) : (
-                  <View style={styles.fullScreenImagePlaceholder}>
-                    <Text style={styles.imagePlaceholderText}>Image not available</Text>
-                  </View>
-                )}
+                <Image source={{ uri: selectedProduct.image1 }} style={styles.fullScreenImage} />
                 <Text style={styles.modalText}>SKU: {selectedProduct.line_item_sku}</Text>
                 <Text style={styles.modalText}>Name: {selectedProduct.line_item_name}</Text>
                 <Text style={styles.modalText}>Quantity: {selectedProduct.total_item_quantity}</Text>
@@ -247,18 +236,6 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     marginRight: 10,
   },
-  imagePlaceholder: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholderText: {
-    fontSize: 12,
-    color: '#999',
-  },
   textContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -276,32 +253,24 @@ const styles = StyleSheet.create({
     color: '#28a745',
   },
   notPickedStatus: {
-    color: '#333',
+    color: '#dc3545',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
   },
   modalContent: {
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
+    margin: 20,
   },
   fullScreenImage: {
     width: '100%',
     height: 300,
     resizeMode: 'contain',
-    marginBottom: 20,
-  },
-  fullScreenImagePlaceholder: {
-    width: '100%',
-    height: 300,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 20,
   },
   modalText: {

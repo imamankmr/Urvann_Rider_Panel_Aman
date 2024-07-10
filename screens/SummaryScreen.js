@@ -11,7 +11,7 @@ const SummaryScreen = ({ route }) => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await axios.get(`https://baxw4atsl7.execute-api.ap-south-1.amazonaws.com/api/summary/${driverName}`);
+        const response = await axios.get(`http://192.168.1.6:5001/api/summary/${driverName}`);
         setSummary(response.data);
         setLoading(false);
       } catch (error) {
