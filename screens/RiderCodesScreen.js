@@ -12,7 +12,6 @@ const RiderCodesScreen = () => {
   useEffect(() => {
     axios.get(`https://urvann-rider-panel.onrender.com/api/driver/${driverName}/sellers`)
       .then(response => {
-        console.log('Sellers response:', response.data);
         setSellers(response.data);
       })
       .catch(error => console.error(`Error fetching seller names for ${driverName}:`, error));

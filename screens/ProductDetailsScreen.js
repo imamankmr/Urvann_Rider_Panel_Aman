@@ -174,11 +174,11 @@ const styles = StyleSheet.create({
   },
   scrollViewContainer: {
     paddingBottom: 20,
-    paddingTop: 10,
+    // paddingTop: 10,
     backgroundColor: '#fff',
   },
   orderContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
     padding: 10,
     backgroundColor: '#f9f9f9',
     borderColor: '#ccc',
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   selectAllContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
     padding: 10,
     backgroundColor: '#e0e0e0',
     borderColor: '#ccc',
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   productContainer: {
     flexDirection: 'row',
     marginBottom: 10,
-    padding: 10,
+    padding: 5,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     resizeMode: 'cover',
-    marginRight: 10,
+    marginRight: 15,
   },
   textContainer: {
     flex: 1,
