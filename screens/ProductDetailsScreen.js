@@ -17,7 +17,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.5:5001/api/products`, {
+        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/products`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -45,7 +45,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(!selectAll);
 
     try {
-      await axios.post('http://192.168.1.5:5001/update-pickup-status-bulk', {
+      await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         status: newStatus
@@ -79,7 +79,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('http://192.168.1.5:5001/api/update-pickup-status', {
+      await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status', {
         sku,
         orderCode,
         status: newStatus
