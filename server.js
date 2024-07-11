@@ -57,7 +57,6 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Login route
-// Login route
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -118,12 +117,18 @@ app.get('/api/products', async (req, res) => {
   const { seller_name, rider_code } = req.query;
 
   try {
-    const filteredData = await Route.find({
-      seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
-      "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
-    }).lean(); // Use .lean() for faster read operation
+    let query = {
+      seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') }
+    };
 
-    const photos = await Photo.find().lean(); // Fetch photos
+    query["Driver Name"] = { $regex: new RegExp(`^${rider_code}$`, 'i') };
+
+    const filteredData = await Route.find(query)
+     //.select('FINAL line_item_sku line_item_name total_item_quantity')
+     .lean(); // Use .lean() for faster read operation
+
+    const skuList = filteredData.map(data => data.line_item_sku);
+    const photos = await Photo.find({ sku: { $in: skuList } }).lean();
 
     const photoMap = {};
     photos.forEach(photo => {
@@ -144,11 +149,11 @@ app.get('/api/products', async (req, res) => {
       return acc;
     }, {});
 
-    res.json({ orderCodeQuantities, products });
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+      res.json({ orderCodeQuantities, products });
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 // POST /api/update-pickup-status
