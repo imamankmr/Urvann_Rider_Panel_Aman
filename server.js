@@ -37,13 +37,10 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Create new user
     user = new User({
       username,
-      password: hashedPassword,
+      password, // Directly storing the password without hashing
     });
 
     // Save user to database
@@ -55,6 +52,7 @@ app.post('/api/register', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // Login route
 app.post('/api/login', async (req, res) => {
@@ -68,8 +66,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     // Check if password matches
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (password !== user.password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
