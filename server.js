@@ -102,7 +102,6 @@ app.get('/api/driver/:driverName/sellers', async (req, res) => {
       };
     }));
 
-    console.log('Sellers with counts:', sellersWithCounts);
     res.json(sellersWithCounts);
   } catch (error) {
     console.error(`Error fetching seller names and counts for ${driverName}:`, error);
