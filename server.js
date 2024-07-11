@@ -225,7 +225,7 @@ app.get('/api/summary/:driverName', async (req, res) => {
 
     if (!summary) {
       console.log('Summary not found');
-      return res.status(404).json({ message: 'Summary not found' });
+      return res.status(200).json({ message: 'Summary not found' });
     }
 
     res.json(summary);

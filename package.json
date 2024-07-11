@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.1",
-    "@react-native-async-storage/async-storage": "^1.23.1",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/checkbox": "^0.5.17",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-native-picker/picker": "2.7.5",
@@ -30,7 +30,7 @@
     "expo-linking": "~6.3.1",
     "expo-router": "~3.5.18",
     "expo-status-bar": "~1.12.1",
-    "expo-updates": "~0.25.18",
+    "expo-updates": "~0.25.19",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "link": "^2.1.1",
@@ -39,7 +39,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-lazyload": "^3.2.1",
-    "react-native": "^0.74.3",
+    "react-native": "0.74.3",
     "react-native-config": "^1.5.2",
     "react-native-dotenv": "^3.4.11",
     "react-native-elements": "^3.4.3",
@@ -51,14 +51,14 @@
     "react-native-safe-area-context": "4.10.1",
     "react-native-screens": "3.31.1",
     "react-native-snap-carousel": "^3.9.1",
-    "react-native-svg": "^15.2.0",
+    "react-native-svg": "15.2.0",
     "react-native-swiper": "^1.6.0",
     "react-native-web": "~0.19.10",
     "rn-fetch-blob": "^0.12.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
+    "@babel/core": "^7.24.0",
     "react-native-svg-transformer": "^1.4.0"
   },
   "private": true
