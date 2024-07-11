@@ -102,6 +102,7 @@ app.get('/api/driver/:driverName/sellers', async (req, res) => {
       };
     }));
 
+    console.log('Sellers with counts:', sellersWithCounts);
     res.json(sellersWithCounts);
   } catch (error) {
     console.error(`Error fetching seller names and counts for ${driverName}:`, error);
@@ -226,7 +227,8 @@ app.get('/api/summary/:driverName', async (req, res) => {
     const summary = await Summary.findOne({ Name: driverName });
 
     if (!summary) {
-      return res.status(200).json({ message: 'Summary not found' });
+      console.log('Summary not found');
+      return res.status(404).json({ message: 'Summary not found' });
     }
 
     res.json(summary);
@@ -235,7 +237,6 @@ app.get('/api/summary/:driverName', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
 
 // Endpoint for Refund
 app.get('/api/refund/:driverName', async (req, res) => {
