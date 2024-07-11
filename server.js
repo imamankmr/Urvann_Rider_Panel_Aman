@@ -225,11 +225,6 @@ app.get('/api/summary/:driverName', async (req, res) => {
 
     const summary = await Summary.findOne({ Name: driverName });
 
-    if (!summary) {
-      console.log('Summary not found');
-      return res.status(404).json({ message: 'Summary not found' });
-    }
-
     res.json(summary);
   } catch (err) {
     console.error('Error fetching summary:', err.message);
