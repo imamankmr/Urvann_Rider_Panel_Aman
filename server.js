@@ -11,6 +11,7 @@ const DeliveryUpdate = require('./models/deliveryUpdate');
 const Summary = require('./models/Summary');
 const Payable = require('./models/Payable');
 const Refund = require('./models/Refund');
+const router = express.Router();
 
 app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
@@ -57,17 +58,17 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Login route
-app.post('/api/login', async (req, res) => {
+router.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // Check if user exists
+    // Find the user and verify password in a single query
     const user = await User.findOne({ username });
+
     if (!user) {
       return res.status(404).json({ message: 'Driver not found' });
     }
 
-    // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -78,11 +79,12 @@ app.post('/api/login', async (req, res) => {
 
     res.status(200).json({ token });
   } catch (error) {
-    console.error(error);
+    console.error('Error during login:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
+module.exports = router;
 // GET /api/driver/:driverName/sellers
 app.get('/api/driver/:driverName/sellers', async (req, res) => {
   const { driverName } = req.params;
@@ -225,12 +227,17 @@ app.get('/api/summary/:driverName', async (req, res) => {
 
     const summary = await Summary.findOne({ Name: driverName });
 
+    if (!summary) {
+      return res.status(200).json({ message: 'Summary not found' });
+    }
+
     res.json(summary);
   } catch (err) {
     console.error('Error fetching summary:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // Endpoint for Refund
 app.get('/api/refund/:driverName', async (req, res) => {
