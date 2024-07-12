@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
 
 const RegisterScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-
-  const filterInput = (text) => {
-    // Allow all characters without filtering
-    return text;
-  };
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
     try {
@@ -52,14 +49,22 @@ const RegisterScreen = ({ navigation }) => {
               autoCorrect={false}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#888"
-              value={password}
-              onChangeText={(text) => setPassword(filterInput(text))}
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Password"
+                placeholderTextColor="#888"
+                value={password}
+                onChangeText={(text) => setPassword(text)}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                style={styles.showPasswordButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#287238" />
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity style={styles.button} onPress={handleRegister}>
               <Text style={styles.buttonText}>Register</Text>
             </TouchableOpacity>
@@ -112,6 +117,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     fontSize: 16,
     color: '#333',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  passwordInput: {
+    height: 50,
+    flex: 1,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 25,
+    marginBottom: 20,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    fontSize: 16,
+    color: '#333',
+  },
+  showPasswordButton: {
+    position: 'absolute',
+    right: 20,
+    top: 10,
   },
   button: {
     backgroundColor: '#287238',

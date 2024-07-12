@@ -1,25 +1,47 @@
-// LoginScreen.js
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, View, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, Text, TextInput, View, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Checkbox from 'expo-checkbox';
+import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
-  const [username, setusername] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const filterInput = (text) => {
-    // Allow all characters without filtering
-    return text;
-  };
+  useEffect(() => {
+    const loadCredentials = async () => {
+      const storedUsername = await AsyncStorage.getItem('username');
+      const storedPassword = await AsyncStorage.getItem('password');
+      const storedRememberMe = await AsyncStorage.getItem('rememberMe');
+
+      if (storedRememberMe === 'true' && storedUsername && storedPassword) {
+        setUsername(storedUsername);
+        setPassword(storedPassword);
+        setRememberMe(true);
+      }
+    };
+    loadCredentials();
+  }, []);
 
   const handleLogin = async () => {
     try {
       const response = await axios.post(`https://urvann-rider-panel.onrender.com/api/login`, { username, password });
       if (response.status === 200 && response.data.token) {
         Alert.alert('Login successful', `Welcome, ${username}!`);
+
+        if (rememberMe) {
+          await AsyncStorage.setItem('username', username);
+          await AsyncStorage.setItem('password', password);
+          await AsyncStorage.setItem('rememberMe', 'true');
+        } else {
+          await AsyncStorage.removeItem('username');
+          await AsyncStorage.removeItem('password');
+          await AsyncStorage.removeItem('rememberMe');
+        }
+
         navigation.reset({
           index: 0,
           routes: [{ name: 'MainTabs', params: { driverName: username } }],
@@ -28,13 +50,7 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       if (error.response && error.response.status === 401) {
         Alert.alert('Login failed', 'Invalid credentials');
-      } 
-
-      if (error.response.status === 404) {
-        console.error('Endpoint not found:', error.response.config.url);
-      }
-      
-      else {
+      } else {
         console.error('Error during login:', error);
         Alert.alert('Login failed', 'Driver does not exist');
       }
@@ -42,7 +58,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient colors={['#fff', '#fff']} style={styles.container}>
+    
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingContainer}
@@ -59,19 +75,37 @@ const LoginScreen = ({ navigation }) => {
               placeholder="Driver Name"
               placeholderTextColor="#888"
               value={username}
-              onChangeText={(text) => setusername(text)}
+              onChangeText={(text) => setUsername(text)}
               autoCapitalize="none"
               autoCorrect={false}
-              //onChangeText={(text) => setusername(filterInput(text).toUpperCase())}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#888"
-              value={password}
-              onChangeText={(text) => setPassword(filterInput(text))}
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Password"
+                placeholderTextColor="#888"
+                value={password}
+                onChangeText={(text) => setPassword(text)}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                style={styles.showPasswordButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#287238" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.rememberMeContainer}>
+              <TouchableOpacity
+                style={styles.rememberMeCheckbox}
+                onPress={() => setRememberMe(!rememberMe)}
+              >
+                <View style={[styles.checkbox, rememberMe ? styles.checked : null]}>
+                  {rememberMe && <Ionicons name="checkmark" size={16} color="white" />}
+                </View>
+                <Text style={styles.rememberMeText}>Remember Me</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
@@ -81,7 +115,6 @@ const LoginScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
   );
 };
 
@@ -127,13 +160,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  checkboxContainer: {
+  passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
+  },
+  passwordInput: {
+    height: 50,
+    flex: 1,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 25,
+    marginBottom: 20,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    fontSize: 16,
+    color: '#333',
+  },
+  showPasswordButton: {
+    position: 'absolute',
+    right: 20,
+    top: 10,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 10,
     marginBottom: 20,
   },
-  checkboxLabel: {
-    marginLeft: 8,
+  rememberMeCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  checked: {
+    backgroundColor: '#287238',
+    borderColor: '#287238',
+  },
+  rememberMeText: {
     fontSize: 16,
     color: '#333',
   },

@@ -4,11 +4,28 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import PayoutScreen from './PayoutScreen';
 import DeliveryUpdatesScreen from './DeliveryUpdatesScreen';
 import RiderCodesScreen from './RiderCodesScreen';
+import { TouchableOpacity, Text } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Tab = createBottomTabNavigator();
 
-const MainTabNavigator = ({ route }) => {
+const MainTabNavigator = ({ navigation, route }) => {
   const driverName = route?.params?.driverName ?? 'defaultDriverName';
+
+  const handleLogout = async () => {
+    // Clear any async storage or context related to the user session
+    await AsyncStorage.removeItem('userToken'); // Assuming you stored token as 'userToken'
+  
+    // Reset the navigation stack to prevent going back to the main screen
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      })
+    );
+  };
+  
 
   return (
     <Tab.Navigator
@@ -43,6 +60,11 @@ const MainTabNavigator = ({ route }) => {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
+        headerRight: () => (
+          <TouchableOpacity style={{ marginRight: 10 }} onPress={handleLogout}>
+            <Text style={{ color: 'white', fontSize: 16 }}>Logout</Text>
+          </TouchableOpacity>
+        ),
       })}
     >
       <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />

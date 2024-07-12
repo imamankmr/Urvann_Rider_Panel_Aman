@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
@@ -23,8 +22,12 @@ const ProductDetailsScreen = ({ route }) => {
             rider_code: driverName
           }
         });
-        setProducts(response.data.products);
+        const fetchedProducts = response.data.products;
+        setProducts(fetchedProducts);
         setOrderCodeQuantities(response.data.orderCodeQuantities);
+
+        const allPicked = fetchedProducts.every(product => product["Pickup Status"] === "Picked");
+        setSelectAll(allPicked);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -84,6 +87,15 @@ const ProductDetailsScreen = ({ route }) => {
         orderCode,
         status: newStatus
       });
+      // Check if all products have the same status and update selectAll state
+      const allPicked = updatedProducts.every(product => product["Pickup Status"] === "Picked");
+      const allNotPicked = updatedProducts.every(product => product["Pickup Status"] === "Not Picked");
+
+      if (allPicked) {
+        setSelectAll(true);
+      } else if (allNotPicked) {
+        setSelectAll(false);
+      }
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
