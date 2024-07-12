@@ -241,7 +241,7 @@ app.get('/api/refund/:driverName', async (req, res) => {
     const driverName = req.params.driverName;
     console.log(`Fetching refund for seller: ${driverName}`);
 
-    const refunds = await Refund.find({ seller_name: driverName });
+    const refunds = await Refund.find({ Driver: driverName });
 
     res.json(refunds);
   } catch (err) {
@@ -256,7 +256,7 @@ app.get('/api/payable/:driverName', async (req, res) => {
     const driverName = req.params.driverName;
     console.log(`Fetching payable for seller: ${driverName}`);
 
-    const payables = await Payable.find({ seller_name: driverName });
+    const payables = await Payable.find({ 'Driver Name': driverName });
 
     res.json(payables);
   } catch (err) {
