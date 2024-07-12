@@ -1,18 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import SummaryScreen from './SummaryScreen';
 import RefundScreen from './RefundScreen';
 import PayableScreen from './PayableScreen';
-import { NavigationContainer } from '@react-navigation/native';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 
 const Tab = createMaterialTopTabNavigator();
 
 const PayoutTabs = ({ driverName }) => (
   <Tab.Navigator
-    swipeEnabled={false} // Disable swiping between tabs
     screenOptions={{
-      swipeEnabled: false, // Move swipeEnabled to screenOptions as well
+      swipeEnabled: false, // Move swipeEnabled to screenOptions
     }}
   >
     <Tab.Screen name="Summary" component={SummaryScreen} initialParams={{ driverName }} />

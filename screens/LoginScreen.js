@@ -28,7 +28,13 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       if (error.response && error.response.status === 401) {
         Alert.alert('Login failed', 'Invalid credentials');
-      } else {
+      } 
+
+      if (error.response.status === 404) {
+        console.error('Endpoint not found:', error.response.config.url);
+      }
+      
+      else {
         console.error('Error during login:', error);
         Alert.alert('Login failed', 'Driver does not exist');
       }
