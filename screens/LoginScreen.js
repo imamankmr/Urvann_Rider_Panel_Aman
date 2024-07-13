@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     top: 10,
   },
   rememberMeContainer: {
-    flexDirection: 'row',
+    flexDirection: 'center',
     alignItems: 'center',
     width: '100%',
     marginTop: 10,

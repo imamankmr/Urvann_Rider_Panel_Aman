@@ -91,11 +91,7 @@ const ProductDetailsScreen = ({ route }) => {
       const allPicked = updatedProducts.every(product => product["Pickup Status"] === "Picked");
       const allNotPicked = updatedProducts.every(product => product["Pickup Status"] === "Not Picked");
 
-      if (allPicked) {
-        setSelectAll(true);
-      } else if (allNotPicked) {
-        setSelectAll(false);
-      }
+      setSelectAll(allPicked);
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
@@ -124,7 +120,7 @@ const ProductDetailsScreen = ({ route }) => {
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
             <View style={[styles.productContainer, product["Pickup Status"] === "Picked" ? styles.picked : styles.notPicked]}>
-            <TouchableOpacity onPress={() => handleImagePress(product)}>
+              <TouchableOpacity onPress={() => handleImagePress(product)}>
                 <Image source={{ uri: product.image1 }} style={styles.image} />
               </TouchableOpacity>
               <View style={styles.textContainer}>

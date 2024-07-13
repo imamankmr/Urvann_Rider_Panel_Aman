@@ -62,7 +62,7 @@ const MainTabNavigator = ({ navigation, route }) => {
         },
         headerRight: () => (
           <TouchableOpacity style={{ marginRight: 10 }} onPress={handleLogout}>
-            <Text style={{ color: 'white', fontSize: 16 }}>Logout</Text>
+            <Text style={{ color: 'white', fontSize: 19 }}>Logout</Text>
           </TouchableOpacity>
         ),
       })}
