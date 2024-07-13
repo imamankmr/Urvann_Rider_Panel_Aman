@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import { MaterialIcons } from '@expo/vector-icons';
 
 const ProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName } = route.params;
@@ -12,31 +12,47 @@ const ProductDetailsScreen = ({ route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectAll, setSelectAll] = useState(false);
+  const [selectAllByOrder, setSelectAllByOrder] = useState({});
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/products`, {
+        params: {
+          seller_name: sellerName,
+          rider_code: driverName
+        }
+      });
+      const fetchedProducts = response.data.products;
+      setProducts(fetchedProducts);
+      setOrderCodeQuantities(response.data.orderCodeQuantities);
+
+      const allPicked = fetchedProducts.every(product => product["Pickup Status"] === "Picked");
+      setSelectAll(allPicked);
+      
+      const initialSelectAllByOrder = {};
+      fetchedProducts.forEach(product => {
+        if (!initialSelectAllByOrder[product.FINAL]) {
+          initialSelectAllByOrder[product.FINAL] = true;
+        }
+        initialSelectAllByOrder[product.FINAL] = initialSelectAllByOrder[product.FINAL] && product["Pickup Status"] === "Picked";
+      });
+      setSelectAllByOrder(initialSelectAllByOrder);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/products`, {
-          params: {
-            seller_name: sellerName,
-            rider_code: driverName
-          }
-        });
-        const fetchedProducts = response.data.products;
-        setProducts(fetchedProducts);
-        setOrderCodeQuantities(response.data.orderCodeQuantities);
-
-        const allPicked = fetchedProducts.every(product => product["Pickup Status"] === "Picked");
-        setSelectAll(allPicked);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, [sellerName, driverName]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProducts();
+    }, [sellerName, driverName])
+  );
 
   const handleImagePress = (product) => {
     setSelectedProduct(product);
@@ -45,7 +61,6 @@ const ProductDetailsScreen = ({ route }) => {
 
   const toggleSelectAll = async () => {
     const newStatus = !selectAll ? "Picked" : "Not Picked";
-    setSelectAll(!selectAll);
 
     try {
       await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status-bulk', {
@@ -53,14 +68,40 @@ const ProductDetailsScreen = ({ route }) => {
         driverName,
         status: newStatus
       });
-      setProducts(prevProducts =>
-        prevProducts.map(product => ({
-          ...product,
-          "Pickup Status": newStatus
-        }))
-      );
+      const updatedProducts = products.map(product => ({
+        ...product,
+        "Pickup Status": newStatus
+      }));
+      setProducts(updatedProducts);
+      setSelectAll(!selectAll);
+      
+      const newSelectAllByOrder = {};
+      Object.keys(selectAllByOrder).forEach(orderCode => {
+        newSelectAllByOrder[orderCode] = !selectAll;
+      });
+      setSelectAllByOrder(newSelectAllByOrder);
     } catch (error) {
       console.error('Error updating pickup status in bulk:', error);
+    }
+  };
+
+  const toggleSelectAllByOrder = async (finalCode) => {
+    const newStatus = !selectAllByOrder[finalCode] ? "Picked" : "Not Picked";
+
+    try {
+      await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status-bulk', {
+        sellerName,
+        driverName,
+        status: newStatus,
+        finalCode
+      });
+      const updatedProducts = products.map(product =>
+        product.FINAL === finalCode ? { ...product, "Pickup Status": newStatus } : product
+      );
+      setProducts(updatedProducts);
+      setSelectAllByOrder(prevState => ({ ...prevState, [finalCode]: !prevState[finalCode] }));
+    } catch (error) {
+      console.error('Error updating pickup status by order code:', error);
     }
   };
 
@@ -87,11 +128,13 @@ const ProductDetailsScreen = ({ route }) => {
         orderCode,
         status: newStatus
       });
-      // Check if all products have the same status and update selectAll state
+      
       const allPicked = updatedProducts.every(product => product["Pickup Status"] === "Picked");
-      const allNotPicked = updatedProducts.every(product => product["Pickup Status"] === "Not Picked");
-
       setSelectAll(allPicked);
+      
+      const allProductsPicked = Object.values(selectAllByOrder).every(status => status);
+      setSelectAll(allProductsPicked);
+      
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
@@ -115,7 +158,10 @@ const ProductDetailsScreen = ({ route }) => {
           <Text style={styles.subHeader}>Total Quantity: {orderCodeQuantities[finalCode]}</Text>
         </View>
         <TouchableOpacity onPress={toggleSelectAll} style={styles.selectAllContainer}>
-          <Text style={styles.selectAllText}>{selectAll ? "Unselect All" : "Select All"}</Text>
+          <Text style={styles.selectAllText}>{selectAll ? `🔘 Unselect All for seller ${sellerName}` : `⚪ Select All for seller ${sellerName}`}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => toggleSelectAllByOrder(finalCode)} style={styles.selectAllContainer}>
+          <Text style={styles.selectAllText}>{selectAllByOrder[finalCode] ? `🔘 Unselect All for order code ${finalCode}` : `⚪ Select All for order code ${finalCode}`}</Text>
         </TouchableOpacity>
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
@@ -136,7 +182,7 @@ const ProductDetailsScreen = ({ route }) => {
         ))}
       </ScrollView>
     ));
-  }, [products, orderCodeQuantities, selectAll]);
+  }, [products, orderCodeQuantities, selectAll, selectAllByOrder]);
 
   if (loading) {
     return (
@@ -182,7 +228,6 @@ const styles = StyleSheet.create({
   },
   scrollViewContainer: {
     paddingBottom: 20,
-    // paddingTop: 10,
     backgroundColor: '#fff',
   },
   orderContainer: {
