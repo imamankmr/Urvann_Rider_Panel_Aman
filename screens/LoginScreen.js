@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   registerButtonText: {
-    color: '#4CAF50',
+    color: '#fff',
   },
 });
 

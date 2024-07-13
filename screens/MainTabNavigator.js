@@ -26,7 +26,6 @@ const MainTabNavigator = ({ navigation, route }) => {
     );
   };
   
-
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
