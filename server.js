@@ -110,19 +110,17 @@ app.get('/api/driver/:driverName/sellers', async (req, res) => {
 
 
 // GET /api/products
+// GET /api/products
 app.get('/api/products', async (req, res) => {
   const { seller_name, rider_code } = req.query;
 
   try {
     let query = {
-      seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') }
+      seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
+      "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
     };
 
-    query["Driver Name"] = { $regex: new RegExp(`^${rider_code}$`, 'i') };
-
-    const filteredData = await Route.find(query)
-     //.select('FINAL line_item_sku line_item_name total_item_quantity')
-     .lean(); // Use .lean() for faster read operation
+    const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup Status').lean();
 
     const skuList = filteredData.map(data => data.line_item_sku);
     const photos = await Photo.find({ sku: { $in: skuList } }).lean();
@@ -146,11 +144,11 @@ app.get('/api/products', async (req, res) => {
       return acc;
     }, {});
 
-      res.json({ orderCodeQuantities, products });
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
+    res.json({ orderCodeQuantities, products });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 // POST /api/update-pickup-status
@@ -158,12 +156,10 @@ app.post('/api/update-pickup-status', async (req, res) => {
   const { sku, orderCode, status } = req.body;
 
   try {
-    // Ensure both SKU and order code are provided
     if (!sku || !orderCode) {
       return res.status(400).json({ message: 'SKU and Order Code are required' });
     }
 
-    // Update the pickup status based on SKU and order code
     const result = await Route.updateOne(
       { line_item_sku: sku, FINAL: orderCode },
       { $set: { "Pickup Status": status } }
@@ -182,13 +178,15 @@ app.post('/api/update-pickup-status', async (req, res) => {
 
 // POST /api/update-pickup-status-bulk
 app.post('/api/update-pickup-status-bulk', async (req, res) => {
-  const { sellerName, driverName, status } = req.body;
+  const { sellerName, driverName, status, finalCode } = req.body;
 
   try {
-    await Route.updateMany(
-      { seller_name: sellerName, "Driver Name": driverName },
-      { $set: { "Pickup Status": status } }
-    );
+    const query = { seller_name: sellerName, "Driver Name": driverName };
+    if (finalCode) {
+      query.FINAL = finalCode;
+    }
+
+    await Route.updateMany(query, { $set: { "Pickup Status": status } });
     res.status(200).json({ message: 'Pickup status updated successfully for all products' });
   } catch (error) {
     console.error('Error updating pickup status:', error);
@@ -196,12 +194,11 @@ app.post('/api/update-pickup-status-bulk', async (req, res) => {
   }
 });
 
+
 // GET /api/data/:driverName
 app.get('/api/data/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
-
-    console.log(`Fetching data for seller: ${driverName}`); // Debugging log
 
     // Fetch only the Date, Delivered, and Penalty fields
     const deliveryUpdates = await DeliveryUpdate.find({ 'Driver Name': driverName }, 'Date Delivered Penalty');
