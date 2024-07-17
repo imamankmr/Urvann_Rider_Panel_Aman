@@ -9,12 +9,16 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const filterInput = (text) => {
+    return text.trim();
+  };
+
   const handleRegister = async () => {
     try {
       const response = await axios.post(`https://urvann-rider-panel.onrender.com/api/register`, { username, password });
       if (response.status === 201) {
         Alert.alert(`Registration successful ${username}, You can now login.`);
-        navigation.navigate('Login'); // Navigate to the Login screen after successful registration
+        navigation.navigate('Login');
       }
     } catch (error) {
       if (error.response && error.response.status === 400) {
@@ -27,59 +31,64 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollViewContent}
-        keyboardShouldPersistTaps="handled"
+    <LinearGradient colors={['#f9f9f9', '#287238']} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingContainer}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.innerContainer}>
-            <Image source={require('../assets/urvann.png')} style={styles.logo} />
-            <Text style={styles.title}>Register</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Username"
-              placeholderTextColor="#888"
-              value={username}
-              onChangeText={(text) => setUsername(text)}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <View style={styles.passwordContainer}>
+        <ScrollView
+          contentContainerStyle={styles.scrollViewContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.innerContainer}>
+              <Image source={require('../assets/urvann.png')} style={styles.logo} />
+              <Text style={styles.title}>Register</Text>
               <TextInput
-                style={styles.passwordInput}
-                placeholder="Password"
+                style={styles.input}
+                placeholder="Username"
                 placeholderTextColor="#888"
-                value={password}
-                onChangeText={(text) => setPassword(text)}
-                secureTextEntry={!showPassword}
+                value={username}
+                onChangeText={(text) => setUsername(filterInput(text).toUpperCase())}
               />
-              <TouchableOpacity
-                style={styles.showPasswordButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#287238" />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Password"
+                  placeholderTextColor="#888"
+                  value={password}
+                  onChangeText={(text) => setPassword(filterInput(text))}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  style={styles.showPasswordButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#287238" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={styles.button} onPress={handleRegister}>
+                <Text style={styles.buttonText}>Register</Text>
               </TouchableOpacity>
+              <View style={styles.loginPromptContainer}>
+                <Text style={styles.registerLinkText}>Already registered? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={styles.loginLinkText}>Login</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleRegister}>
-              <Text style={styles.buttonText}>Register</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.loginButton]} onPress={() => navigation.navigate('Login')}>
-              <Text style={[styles.buttonText, styles.loginButtonText]}>Already registered? Login</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableWithoutFeedback>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  keyboardAvoidingContainer: {
     flex: 1,
   },
   scrollViewContent: {
@@ -94,7 +103,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    marginTop: 10,
     width: 220,
     height: 40,
     marginBottom: 50,
@@ -141,7 +149,7 @@ const styles = StyleSheet.create({
     top: 10,
   },
   button: {
-    backgroundColor: '#287238',
+    backgroundColor: '#f8b314',
     paddingVertical: 15,
     borderRadius: 25,
     alignItems: 'center',
@@ -153,14 +161,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  loginButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-    width: '100%',
+  loginPromptContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
   },
-  loginButtonText: {
-    color: '#4CAF50',
+  registerLinkText: {
+    color: '#333',
+    fontSize: 18,
+  },
+  loginLinkText: {
+    color: '#f8b314',
+    fontSize: 18,
   },
 });
 

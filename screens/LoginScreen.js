@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, View, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, Text, TextInput, View, TouchableOpacity, Alert, Image, KeyboardAvoidingView, ScrollView, Platform, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,6 +10,7 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
     const loadCredentials = async () => {
@@ -25,6 +26,30 @@ const LoginScreen = ({ navigation }) => {
     };
     loadCredentials();
   }, []);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
+  const filterInput = (text) => {
+    return text.trim();
+  };
 
   const handleLogin = async () => {
     try {
@@ -52,13 +77,13 @@ const LoginScreen = ({ navigation }) => {
         Alert.alert('Login failed', 'Invalid credentials');
       } else {
         console.error('Error during login:', error);
-        Alert.alert('Login failed', 'Driver does not exist');
+        Alert.alert('Login failed', 'User does not exist');
       }
     }
   };
 
   return (
-    
+    <LinearGradient colors={['#f9f9f9', '#287238']} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingContainer}
@@ -69,13 +94,13 @@ const LoginScreen = ({ navigation }) => {
         >
           <Image source={require('../assets/urvann.png')} style={styles.logo} />
           <View style={styles.innerContainer}>
-            <Text style={styles.title}>Driver login</Text>
+            <Text style={styles.title}>Seller login</Text>
             <TextInput
               style={styles.input}
-              placeholder="Driver Name"
+              placeholder="Username"
               placeholderTextColor="#888"
               value={username}
-              onChangeText={(text) => setUsername(text)}
+              onChangeText={(text) => setUsername(filterInput(text).toUpperCase())}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -85,7 +110,7 @@ const LoginScreen = ({ navigation }) => {
                 placeholder="Password"
                 placeholderTextColor="#888"
                 value={password}
-                onChangeText={(text) => setPassword(text)}
+                onChangeText={(text) => setPassword(filterInput(text))}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity
@@ -106,15 +131,18 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.rememberMeText}>Remember Me</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.registerButton]} onPress={() => navigation.navigate('Register')}>
-              <Text style={[styles.buttonText, styles.registerButtonText]}>New user? Register</Text>
+            <View style={[styles.buttonContainer, keyboardVisible && { marginBottom: 40 }]}>
+              <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                <Text style={styles.buttonText}>Login</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={styles.registerText}>Don't have an account? <Text style={styles.registerLink}>Register</Text></Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
@@ -183,19 +211,19 @@ const styles = StyleSheet.create({
     top: 10,
   },
   rememberMeContainer: {
-    flexDirection: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginTop: 10,
     marginBottom: 20,
+    justifyContent: 'center',
   },
   rememberMeCheckbox: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#ccc',
@@ -204,34 +232,39 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   checked: {
-    backgroundColor: '#287238',
-    borderColor: '#287238',
+    backgroundColor: '#f8b314',
+    borderColor: '#f8b314',
   },
   rememberMeText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#333',
   },
+  buttonContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
   button: {
-    backgroundColor: '#287238',
+    flex: 1,
+    backgroundColor: '#f8b314',
     paddingVertical: 15,
     borderRadius: 25,
     alignItems: 'center',
-    marginBottom: 10,
-    width: '100%',
+    marginHorizontal: 5,
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  registerButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-    width: '100%',
+  registerText: {
+    marginTop: 20,
+    fontSize: 18,
+    color: '#333',
   },
-  registerButtonText: {
-    color: '#fff',
+  registerLink: {
+    color: '#f8b314',
+    fontWeight: 'bold',
   },
 });
 
