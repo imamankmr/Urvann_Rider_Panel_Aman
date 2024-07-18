@@ -46,19 +46,21 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.title}>Register</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Username"
+                placeholder="username"
                 placeholderTextColor="#888"
                 value={username}
-                onChangeText={(text) => setUsername(filterInput(text).toUpperCase())}
+                onChangeText={(text) => setUsername(text)}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={styles.passwordInput}
+                  style={styles.input}
                   placeholder="Password"
                   placeholderTextColor="#888"
                   value={password}
-                  onChangeText={(text) => setPassword(filterInput(text))}
-                  secureTextEntry={!showPassword}
+                  onChangeText={(text) => setPassword(text)}
+                  secureTextEntry
                 />
                 <TouchableOpacity
                   style={styles.showPasswordButton}

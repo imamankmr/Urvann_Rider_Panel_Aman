@@ -107,9 +107,6 @@ app.get('/api/driver/:driverName/sellers', async (req, res) => {
   }
 });
 
-
-
-// GET /api/products
 // GET /api/products
 app.get('/api/products', async (req, res) => {
   const { seller_name, rider_code } = req.query;
@@ -178,22 +175,24 @@ app.post('/api/update-pickup-status', async (req, res) => {
 
 // POST /api/update-pickup-status-bulk
 app.post('/api/update-pickup-status-bulk', async (req, res) => {
-  const { sellerName, driverName, status, finalCode } = req.body;
+  const { sellerName, driverName, finalCode, status } = req.body;
 
   try {
-    const query = { seller_name: sellerName, "Driver Name": driverName };
-    if (finalCode) {
-      query.FINAL = finalCode;
+    const result = await Route.updateMany(
+      { seller_name: sellerName, "Driver Name": driverName, FINAL: finalCode },
+      { $set: { "Pickup Status": status } }
+    );
+
+    if (result.nModified === 0) {
+      return res.status(404).json({ message: 'No matching documents found to update' });
     }
 
-    await Route.updateMany(query, { $set: { "Pickup Status": status } });
-    res.status(200).json({ message: 'Pickup status updated successfully for all products' });
+    res.status(200).json({ message: 'Pickup status updated in bulk successfully.' });
   } catch (error) {
-    console.error('Error updating pickup status:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error updating pickup status in bulk:', error);
+    res.status(500).json({ error: 'Failed to update pickup status in bulk.' });
   }
 });
-
 
 // GET /api/data/:driverName
 app.get('/api/data/:driverName', async (req, res) => {

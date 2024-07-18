@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, To
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName } = route.params;
@@ -11,7 +12,27 @@ const ProductDetailsScreen = ({ route }) => {
   const [orderCodeQuantities, setOrderCodeQuantities] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectAll, setSelectAll] = useState(false);
+  const [selectAll, setSelectAll] = useState({});
+
+  // Function to save pickup status locally
+  const savePickupStatusLocally = async (sku, orderCode, status) => {
+    try {
+      await AsyncStorage.setItem(`${sku}_${orderCode}`, status);
+    } catch (error) {
+      console.error('Error saving pickup status:', error);
+    }
+  };
+
+  // Function to load pickup status locally
+  const loadPickupStatusLocally = async (sku, orderCode) => {
+    try {
+      const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
+      return status || "Not Picked";
+    } catch (error) {
+      console.error('Error loading pickup status:', error);
+      return "Not Picked";
+    }
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -22,15 +43,29 @@ const ProductDetailsScreen = ({ route }) => {
             rider_code: driverName
           }
         });
-        const fetchedProducts = response.data.products.map(product => ({
-          ...product,
-          "Pickup Status": product["Pickup Status"] || "Not Picked" // Ensure Pickup Status is initialized
+        
+        const fetchedProducts = await Promise.all(response.data.products.map(async product => {
+          const localStatus = await loadPickupStatusLocally(product.line_item_sku, product.FINAL);
+          return {
+            ...product,
+            "Pickup Status": localStatus
+          };
         }));
+
         setProducts(fetchedProducts);
         setOrderCodeQuantities(response.data.orderCodeQuantities);
 
-        const allPicked = fetchedProducts.every(product => product["Pickup Status"] === "Picked");
-        setSelectAll(allPicked);
+        // Initialize selectAll based on the fetched products' status
+        const initialSelectAll = {};
+        fetchedProducts.forEach(product => {
+          if (!initialSelectAll[product.FINAL]) {
+            initialSelectAll[product.FINAL] = true;
+          }
+          if (product["Pickup Status"] === "Not Picked") {
+            initialSelectAll[product.FINAL] = false;
+          }
+        });
+        setSelectAll(initialSelectAll);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -46,22 +81,28 @@ const ProductDetailsScreen = ({ route }) => {
     setModalVisible(true);
   };
 
-  const toggleSelectAll = async () => {
-    const newStatus = !selectAll ? "Picked" : "Not Picked";
-    setSelectAll(!selectAll);
-
+  const toggleSelectAll = async (finalCode) => {
+    const newStatus = !selectAll[finalCode] ? "Picked" : "Not Picked";
+    setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
+  
     try {
       await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
+        finalCode,
         status: newStatus
       });
-      setProducts(prevProducts =>
-        prevProducts.map(product => ({
-          ...product,
-          "Pickup Status": newStatus
-        }))
+      const updatedProducts = products.map(product =>
+        product.FINAL === finalCode ? { ...product, "Pickup Status": newStatus } : product
       );
+      setProducts(updatedProducts);
+  
+      await Promise.all(updatedProducts.map(async product => {
+        if (product.FINAL === finalCode) {
+          await savePickupStatusLocally(product.line_item_sku, finalCode, newStatus);
+        }
+      }));
+  
     } catch (error) {
       console.error('Error updating pickup status in bulk:', error);
     }
@@ -75,9 +116,9 @@ const ProductDetailsScreen = ({ route }) => {
       }
       return product;
     });
-
+  
     setProducts(updatedProducts);
-
+  
     try {
       const productToUpdate = updatedProducts.find(product => product.line_item_sku === sku && product.FINAL === orderCode);
       if (!productToUpdate) {
@@ -90,11 +131,13 @@ const ProductDetailsScreen = ({ route }) => {
         orderCode,
         status: newStatus
       });
-      // Check if all products have the same status and update selectAll state
-      const allPicked = updatedProducts.every(product => product["Pickup Status"] === "Picked");
-      const allNotPicked = updatedProducts.every(product => product["Pickup Status"] === "Not Picked");
-
-      setSelectAll(allPicked);
+  
+      await savePickupStatusLocally(sku, orderCode, newStatus);
+  
+      const allPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Picked");
+      const allNotPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Picked");
+  
+      setSelectAll(prev => ({ ...prev, [orderCode]: allPicked ? true : allNotPicked ? false : false }));
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
@@ -117,8 +160,8 @@ const ProductDetailsScreen = ({ route }) => {
           <Text style={styles.header}>Order Code: {finalCode}</Text>
           <Text style={styles.subHeader}>Total Quantity: {orderCodeQuantities[finalCode]}</Text>
         </View>
-        <TouchableOpacity onPress={toggleSelectAll} style={styles.selectAllContainer}>
-          <Text style={styles.selectAllText}>{selectAll ? "Unselect All" : "Select All"}</Text>
+        <TouchableOpacity onPress={() => toggleSelectAll(finalCode)} style={styles.selectAllContainer}>
+          <Text style={styles.selectAllText}>{selectAll[finalCode] ? "Unselect All" : "Select All"}</Text>
         </TouchableOpacity>
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
