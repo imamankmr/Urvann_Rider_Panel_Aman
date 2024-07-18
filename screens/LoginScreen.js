@@ -94,7 +94,7 @@ const LoginScreen = ({ navigation }) => {
         >
           <Image source={require('../assets/urvann.png')} style={styles.logo} />
           <View style={styles.innerContainer}>
-            <Text style={styles.title}>Seller login</Text>
+            <Text style={styles.title}>Driver login</Text>
             <TextInput
               style={styles.input}
               placeholder="username"
