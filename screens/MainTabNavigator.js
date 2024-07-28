@@ -2,8 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import PayoutScreen from './PayoutScreen';
-import DeliveryUpdatesScreen from './DeliveryUpdatesScreen';
+import DailyUpdatesScreen from './DailyUpdatesScreen';
 import RiderCodesScreen from './RiderCodesScreen';
+import DeliveryScreen from './DeliveryScreen'; // Import the new DeliveryScreen component
 import { TouchableOpacity, Text } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,8 +38,11 @@ const MainTabNavigator = ({ navigation, route }) => {
           } else if (route.name === 'Pickup') {
             iconName = 'truck-delivery';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'Delivery Updates') {
+          } else if (route.name === 'Daily Updates') {
             iconName = 'clipboard-list';
+            return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+          } else if (route.name === 'Delivery') {
+            iconName = 'package-variant';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           }
         },
@@ -68,7 +72,8 @@ const MainTabNavigator = ({ navigation, route }) => {
     >
       <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />
       <Tab.Screen name="Pickup" component={RiderCodesScreen} initialParams={{ driverName }} />
-      <Tab.Screen name="Delivery Updates" component={DeliveryUpdatesScreen} initialParams={{ driverName }} />
+      <Tab.Screen name="Daily Updates" component={DailyUpdatesScreen} initialParams={{ driverName }} />
+      <Tab.Screen name="Delivery" component={DeliveryScreen} initialParams={{ driverName }} />
     </Tab.Navigator>
   );
 };

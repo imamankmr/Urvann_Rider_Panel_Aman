@@ -6,7 +6,7 @@ const cors = require('cors');
 const app = express();
 const Photo = require('./models/photo'); // Import the Photo model
 const User = require('./models/userDetails'); // Use the existing User model
-const Route = require('./models/route'); // Import the Route model
+const Route = require('./models/route');
 const DeliveryUpdate = require('./models/deliveryUpdate');
 const Summary = require('./models/Summary');
 const Payable = require('./models/Payable');
@@ -235,7 +235,6 @@ app.get('/api/summary/:driverName', async (req, res) => {
 app.get('/api/refund/:driverName', async (req, res) => {
   try {
     const driverName = req.params.driverName;
-    console.log(`Fetching refund for seller: ${driverName}`);
 
     const refunds = await Refund.find({ Driver: driverName });
 
@@ -260,6 +259,50 @@ app.get('/api/payable/:driverName', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+app.get('/api/customers/:driverName', async (req, res) => {
+  try {
+    const { driverName } = req.params;
+    const routes = await Route.find({ 'Driver Name': driverName });
+
+    if (routes.length === 0) {
+      return res.status(404).json({ message: 'No customers found for this driver' });
+    }
+
+    // Create a map to ensure unique customers
+    const customerMap = new Map();
+
+    routes.forEach(route => {
+      if (!customerMap.has(route.shipping_address_full_name)) {
+        customerMap.set(route.shipping_address_full_name, {
+          _id: route._id, // Include _id
+          order_code: route.FINAL,
+          items: route.Items,
+          address: route.shipping_address_address,
+          phone: route.shipping_address_phone,
+        });
+      }
+    });
+
+    // Convert map to array of objects
+    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, phone }]) => ({
+      _id,
+      name,         // This will be the name of the customer
+      order_code,
+      items,
+      address,
+      phone,
+    }));
+
+    res.json({ customers });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
 
 // Server listening on port 5000
 app.listen(5001, () => {
