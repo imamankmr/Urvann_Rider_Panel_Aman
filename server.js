@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
 
 // MongoDB connection URI
-const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannRiderApp?retryWrites=true&w=majority&appName=UrvannGenie';
+const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannSellerApp?retryWrites=true&w=majority&appName=UrvannGenie';
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -305,6 +305,6 @@ app.get('/api/customers/:driverName', async (req, res) => {
 
 
 // Server listening on port 5000
-app.listen(5001, () => {
-  console.log('Server is running on http://localhost:5001');
+app.listen(5002, () => {
+  console.log('Server is running on http://localhost:5002');
 });
