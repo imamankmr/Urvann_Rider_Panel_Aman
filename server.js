@@ -302,7 +302,7 @@ app.get('/api/customers/:driverName', async (req, res) => {
 });
 
 
-// Server listening on port 5002
-app.listen(5002, () => {
-  console.log('Server is running on http://localhost:5002');
+// Server listening on port 5001
+app.listen(5001, () => {
+  console.log('Server is running on http://localhost:5001');
 });
