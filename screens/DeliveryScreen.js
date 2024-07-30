@@ -15,7 +15,7 @@ const DeliveryScreen = ({ route }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http://192.168.137.175:5001/api/customers/${driverName}`);
+        const response = await axios.get(`http://192.168.137.1:5002/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
         // Initialize user inputs and statuses with default values
