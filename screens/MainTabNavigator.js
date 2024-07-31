@@ -4,7 +4,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import PayoutScreen from './PayoutScreen';
 import DailyUpdatesScreen from './DailyUpdatesScreen';
 import RiderCodesScreen from './RiderCodesScreen';
-import DeliveryScreen from './DeliveryScreen'; // Import the new DeliveryScreen component
+import DeliveryTabNavigator from './DeliveryTabNavigator'; // Import the DeliveryTabNavigator component
 import { TouchableOpacity, Text } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -35,14 +35,14 @@ const MainTabNavigator = ({ navigation, route }) => {
           if (route.name === 'Payout') {
             iconName = 'cash';
             return <Ionicons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'Pickup') {
-            iconName = 'truck-delivery';
-            return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+          // } else if (route.name === 'Pickup') {
+          //   iconName = 'truck-delivery';
+          //   return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           } else if (route.name === 'Daily Updates') {
             iconName = 'clipboard-list';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           } else if (route.name === 'Delivery') {
-            iconName = 'package-variant';
+            iconName = 'truck-delivery';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           }
         },
@@ -70,10 +70,16 @@ const MainTabNavigator = ({ navigation, route }) => {
         ),
       })}
     >
+      
+      <Tab.Screen
+        name="Delivery"
+        initialParams={{ driverName }}
+        component={DeliveryTabNavigator} // Directly use DeliveryTabNavigator
+      />
       <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />
-      <Tab.Screen name="Pickup" component={RiderCodesScreen} initialParams={{ driverName }} />
       <Tab.Screen name="Daily Updates" component={DailyUpdatesScreen} initialParams={{ driverName }} />
-      <Tab.Screen name="Delivery" component={DeliveryScreen} initialParams={{ driverName }} />
+      {/* <Tab.Screen name="Pickup" component={RiderCodesScreen} initialParams={{ driverName }} /> */}
+      
     </Tab.Navigator>
   );
 };

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import axios from 'axios';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
-const RiderCodesScreen = () => {
-  const { params } = useRoute();
-  const { driverName } = params;
+const RiderCodesScreen = ({ route }) => {
   const [sellers, setSellers] = useState([]);
   const navigation = useNavigation();
+  const { driverName } = route.params; // Extract driverName from route params
 
   useEffect(() => {
     axios.get(`https://urvann-rider-panel.onrender.com/api/driver/${driverName}/sellers`)
@@ -23,20 +22,20 @@ const RiderCodesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sellers for {driverName}:</Text>
       <FlatList
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleSellerPress(item.sellerName)}>
-            <View style={styles.tile}>
-              <Text style={styles.text}>
-                {item.sellerName}
-              </Text>
-              <Text style={styles.productCount}>
-                {item.productCount} {item.productCount === 1 ? 'item' : 'items'}
-              </Text>
-            </View>
+          <TouchableOpacity 
+            style={styles.tile} 
+            onPress={() => handleSellerPress(item.sellerName)}
+          >
+            <Text style={styles.sellerName}>
+              {item.sellerName}
+            </Text>
+            <Text style={styles.productCount}>
+              {item.productCount} {item.productCount === 1 ? 'item' : 'items'}
+            </Text>
           </TouchableOpacity>
         )}
       />
@@ -47,34 +46,34 @@ const RiderCodesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
+    backgroundColor: '#f0f4f8',
+    paddingHorizontal: 15,
     paddingTop: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
   },
   tile: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
-    marginVertical: 10,
-    backgroundColor: '#f9f9f9',
-    borderColor: '#ccc',
+    padding: 15,
+    marginVertical: 8,
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderRadius: 5,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3, // For Android shadow
+  },
+  sellerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
   productCount: {
-    fontSize: 18,
-    color: '#333',
-    marginRight: 10,
-  },
-  text: {
-    fontSize: 18,
-    color: '#333',
+    fontSize: 14,
+    color: '#666',
   },
 });
 
