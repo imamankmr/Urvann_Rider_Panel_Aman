@@ -37,7 +37,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/products`, {
+        const response = await axios.get(`http://192.168.137.1:5001/api/products`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -86,7 +86,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status-bulk', {
+      await axios.post('http://192.168.137.1:5001/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         finalCode,
@@ -126,7 +126,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('https://urvann-rider-panel.onrender.com/api/update-pickup-status', {
+      await axios.post('http://192.168.137.1:5001/api/update-pickup-status', {
         sku,
         orderCode,
         status: newStatus
@@ -232,15 +232,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   orderContainer: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
+    borderRadius: 10,
     width: '90%',
-    alignItems: 'center',
     alignSelf: 'center',
+    marginBottom: 20,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
   selectAllContainer: {
     marginBottom: 10,
@@ -269,26 +272,26 @@ const styles = StyleSheet.create({
   },
   productContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
-    padding: 5,
-    borderColor: '#ccc',
+    marginBottom: 15,
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderRadius: 5,
+    borderRadius: 10,
     width: '90%',
     alignSelf: 'center',
-    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  picked: {
-    backgroundColor: '#d4edda',
-  },
-  notPicked: {
-    backgroundColor: '#f9f9f9',
-  },
+ 
   image: {
     width: 100,
     height: 100,
     resizeMode: 'cover',
     marginRight: 15,
+    borderRadius: 10,
   },
   textContainer: {
     flex: 1,
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 1,
   },
   statusText: {
     fontSize: 16,
@@ -322,14 +325,21 @@ const styles = StyleSheet.create({
     margin: 20,
   },
   fullScreenImage: {
-    width: '100%',
+    width: 300,
     height: 300,
-    resizeMode: 'contain',
+    borderRadius: 10,
     marginBottom: 20,
   },
   modalText: {
     fontSize: 18,
     marginBottom: 10,
+  },
+
+  picked: {
+    backgroundColor: '#d4edda',
+  },
+  notPicked: {
+    backgroundColor: '#f9f9f9',
   },
 });
 

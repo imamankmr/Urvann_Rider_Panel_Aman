@@ -117,7 +117,7 @@ app.get('/api/products', async (req, res) => {
       "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
     };
 
-    const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup Status').lean();
+    const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
 
     const skuList = filteredData.map(data => data.line_item_sku);
     const photos = await Photo.find({ sku: { $in: skuList } }).lean();
@@ -133,7 +133,7 @@ app.get('/api/products', async (req, res) => {
       line_item_name: data.line_item_name,
       image1: photoMap[data.line_item_sku] || null,
       total_item_quantity: data.total_item_quantity,
-      "Pickup Status": data["Pickup Status"]
+      "Pickup Status": data.Pickup_Status
     }));
 
     const orderCodeQuantities = products.reduce((acc, product) => {
@@ -159,7 +159,7 @@ app.post('/api/update-pickup-status', async (req, res) => {
 
     const result = await Route.updateOne(
       { line_item_sku: sku, FINAL: orderCode },
-      { $set: { "Pickup Status": status } }
+      { $set: { Pickup_Status : status } }
     );
 
     if (result.nModified === 0) {
@@ -180,7 +180,7 @@ app.post('/api/update-pickup-status-bulk', async (req, res) => {
   try {
     const result = await Route.updateMany(
       { seller_name: sellerName, "Driver Name": driverName, FINAL: finalCode },
-      { $set: { "Pickup Status": status } }
+      { $set: { Pickup_Status : status } }
     );
 
     if (result.nModified === 0) {
