@@ -16,7 +16,8 @@ app.use(express.json());
 app.use(cors()); // Enable CORS for all routes
 
 // MongoDB connection URI
-const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannSellerApp?retryWrites=true&w=majority&appName=UrvannGenie';
+// const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannSellerApp?retryWrites=true&w=majority&appName=UrvannGenie';
+const MONGODB_URI = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannRiderApp?retryWrites=true&w=majority&appName=UrvannGenie';
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -81,16 +82,57 @@ app.post('/api/login', async (req, res) => {
 });
 
 // GET /api/driver/:driverName/sellers
-app.get('/api/driver/:driverName/sellers', async (req, res) => {
+// app.get('/api/driver/:driverName/sellers', async (req, res) => {
+//   const { driverName } = req.params;
+//   console.log(`Fetching sellers for driver: ${driverName}`);
+
+//   try {
+//     const sellers = await Route.find({ 'Driver Name': driverName }).distinct('seller_name');
+
+//     const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
+//       const productCount = await Route.aggregate([
+//         { $match: { 'Driver Name': driverName, seller_name: sellerName } },
+//         { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
+//       ]);
+//       return {
+//         sellerName,
+//         productCount: productCount[0] ? productCount[0].totalQuantity : 0
+//       };
+//     }));
+
+//     console.log('Sellers with counts:', sellersWithCounts);
+//     res.json(sellersWithCounts);
+//   } catch (error) {
+//     console.error(`Error fetching seller names and counts for ${driverName}:`, error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+app.get('/api/driver/:driverName/pickup-sellers', async (req, res) => {
   const { driverName } = req.params;
-  console.log(`Fetching sellers for driver: ${driverName}`);
+  console.log(`Fetching pickup sellers for driver: ${driverName}`);
 
   try {
-    const sellers = await Route.find({ 'Driver Name': driverName }).distinct('seller_name');
+    const sellers = await Route.find({
+      'Driver Name': driverName,
+      $or: [
+        { Delivery_Status: { $in: ['Empty', 'Replacement'] } },
+        { Delivery_Status: { $eq: null } },  // Add condition for null
+        { Delivery_Status: { $eq: '' } }     // Add condition for empty string
+      ]
+    }).distinct('seller_name');
 
     const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
       const productCount = await Route.aggregate([
-        { $match: { 'Driver Name': driverName, seller_name: sellerName } },
+        { $match: { 
+          'Driver Name': driverName, 
+          seller_name: sellerName, 
+          $or: [
+            { Delivery_Status: { $in: ['Empty', 'Replacement'] } },
+            { Delivery_Status: { $eq: null } },
+            { Delivery_Status: { $eq: '' } }
+          ]
+        } },
         { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
       ]);
       return {
@@ -99,22 +141,96 @@ app.get('/api/driver/:driverName/sellers', async (req, res) => {
       };
     }));
 
-    console.log('Sellers with counts:', sellersWithCounts);
+    console.log('Pickup sellers with counts:', sellersWithCounts);
     res.json(sellersWithCounts);
   } catch (error) {
-    console.error(`Error fetching seller names and counts for ${driverName}:`, error);
+    console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
+
+app.get('/api/driver/:driverName/reverse-pickup-sellers', async (req, res) => {
+  const { driverName } = req.params;
+  console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
+
+  try {
+    const sellers = await Route.find({ 'Driver Name': driverName, Delivery_Status: { $in: ['Return', 'Reverse'] } }).distinct('seller_name');
+
+    const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
+      const productCount = await Route.aggregate([
+        { $match: { 'Driver Name': driverName, seller_name: sellerName, Delivery_Status: { $in: ['Return', 'Reverse'] } } },
+        { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
+      ]);
+      return {
+        sellerName,
+        productCount: productCount[0] ? productCount[0].totalQuantity : 0
+      };
+    }));
+
+    console.log('Reverse pickup sellers with counts:', sellersWithCounts);
+    res.json(sellersWithCounts);
+  } catch (error) {
+    console.error(`Error fetching reverse pickup seller names and counts for ${driverName}:`, error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 // GET /api/products
-app.get('/api/products', async (req, res) => {
+// app.get('/api/products', async (req, res) => {
+//   const { seller_name, rider_code } = req.query;
+
+//   try {
+//     let query = {
+//       seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
+//       "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
+//     };
+
+//     const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
+
+//     const skuList = filteredData.map(data => data.line_item_sku);
+//     const photos = await Photo.find({ sku: { $in: skuList } }).lean();
+
+//     const photoMap = {};
+//     photos.forEach(photo => {
+//       photoMap[photo.sku] = photo.image_url;
+//     });
+
+//     const products = filteredData.map(data => ({
+//       FINAL: data.FINAL,
+//       line_item_sku: data.line_item_sku,
+//       line_item_name: data.line_item_name,
+//       image1: photoMap[data.line_item_sku] || null,
+//       total_item_quantity: data.total_item_quantity,
+//       "Pickup Status": data.Pickup_Status
+//     }));
+
+//     const orderCodeQuantities = products.reduce((acc, product) => {
+//       acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
+//       return acc;
+//     }, {});
+
+//     res.json({ orderCodeQuantities, products });
+//   } catch (error) {
+//     console.error('Error fetching products:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+app.get('/api/pickup-products', async (req, res) => {
   const { seller_name, rider_code } = req.query;
 
   try {
     let query = {
       seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
-      "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') }
+      "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
+      $or: [
+        { Delivery_Status: 'Empty' },
+        { Delivery_Status: 'Replacement' },
+        { Delivery_Status: { $eq: null } }, // Adding null condition
+        { Delivery_Status: { $eq: '' } }    // Adding empty string condition
+      ]
     };
 
     const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
@@ -143,10 +259,55 @@ app.get('/api/products', async (req, res) => {
 
     res.json({ orderCodeQuantities, products });
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching pickup products:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+app.get('/api/reverse-pickup-products', async (req, res) => {
+  const { seller_name, rider_code } = req.query;
+
+  try {
+    let query = {
+      seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
+      "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
+      $or: [
+        { Delivery_Status: 'Return' },
+        { Delivery_Status: 'Reverse' }
+      ]
+    };
+
+    const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
+
+    const skuList = filteredData.map(data => data.line_item_sku);
+    const photos = await Photo.find({ sku: { $in: skuList } }).lean();
+
+    const photoMap = {};
+    photos.forEach(photo => {
+      photoMap[photo.sku] = photo.image_url;
+    });
+
+    const products = filteredData.map(data => ({
+      FINAL: data.FINAL,
+      line_item_sku: data.line_item_sku,
+      line_item_name: data.line_item_name,
+      image1: photoMap[data.line_item_sku] || null,
+      total_item_quantity: data.total_item_quantity,
+      "Pickup Status": data.Pickup_Status
+    }));
+
+    const orderCodeQuantities = products.reduce((acc, product) => {
+      acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
+      return acc;
+    }, {});
+
+    res.json({ orderCodeQuantities, products });
+  } catch (error) {
+    console.error('Error fetching reverse pickup products:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 // POST /api/update-pickup-status
 app.post('/api/update-pickup-status', async (req, res) => {
@@ -260,10 +421,122 @@ app.get('/api/payable/:driverName', async (req, res) => {
   }
 });
 
+// app.get('/api/customers/:driverName', async (req, res) => {
+//   try {
+//     const { driverName } = req.params;
+//     const routes = await Route.find({ 'Driver Name': driverName });
+
+//     if (routes.length === 0) {
+//       return res.status(404).json({ message: 'No customers found for this driver' });
+//     }
+
+//     // Create a map to ensure unique customers
+//     const customerMap = new Map();
+
+//     routes.forEach(route => {
+//       if (!customerMap.has(route.shipping_address_full_name)) {
+//         customerMap.set(route.shipping_address_full_name, {
+//           _id: route._id, // Include _id
+//           order_code: route.FINAL,
+//           items: route.Items,
+//           address: route.shipping_address_address,
+//           phone: route.shipping_address_phone,
+//         });
+//       }
+//     });
+
+//     // Convert map to array of objects
+//     const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, phone }]) => ({
+//       _id,
+//       name,         // This will be the name of the customer
+//       order_code,
+//       items,
+//       address,
+//       phone,
+//     }));
+
+//     res.json({ customers });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
 app.get('/api/customers/:driverName', async (req, res) => {
   try {
     const { driverName } = req.params;
-    const routes = await Route.find({ 'Driver Name': driverName });
+
+    // Define the filter conditions for Delivery_Status
+    const filterConditions = [
+      { 'Delivery_Status': { $exists: false } }, // No Delivery_Status field
+      { 'Delivery_Status': 'Replacement' }
+    ];
+
+    const routes = await Route.find({ 
+      'Driver Name': driverName,
+      $or: filterConditions
+    });
+
+    if (routes.length === 0) {
+      return res.status(404).json({ message: 'No customers found for this driver' });
+    }
+
+    // Create a map to aggregate item quantities by customer
+    const customerMap = new Map();
+
+    routes.forEach(route => {
+      if (!customerMap.has(route.shipping_address_full_name)) {
+        customerMap.set(route.shipping_address_full_name, {
+          _id: route._id, // Include _id
+          order_code: route.FINAL,
+          items: route.Items,
+          address: route.shipping_address_address,
+          total_quantity: route.total_item_quantity, // Initialize with current quantity
+          phone: route.shipping_address_phone,
+        });
+      } else {
+        // Aggregate quantity for the existing customer
+        const existing = customerMap.get(route.shipping_address_full_name);
+        existing.total_quantity += route.total_item_quantity;
+        customerMap.set(route.shipping_address_full_name, existing);
+      }
+    });
+
+    // Convert map to array of objects
+    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone }]) => ({
+      _id,
+      name,         // This will be the name of the customer
+      order_code,
+      items,
+      address,
+      total_quantity,
+      phone,
+    }));
+
+    res.json({ customers }); // Return the customers with aggregated quantity
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+app.get('/api/rtoscreen/:driverName', async (req, res) => {
+  try {
+    const { driverName } = req.params;
+
+    // Define the filter conditions for Delivery_Status
+    const filterConditions = [
+      { 'Delivery_Status': 'Return' },
+      { 'Delivery_Status': 'Reverse' }
+    ];
+
+    // Fetch routes with the given driver name and filter conditions
+    const routes = await Route.find({ 
+      'Driver Name': driverName,
+      $or: filterConditions
+    });
 
     if (routes.length === 0) {
       return res.status(404).json({ message: 'No customers found for this driver' });
@@ -275,31 +548,105 @@ app.get('/api/customers/:driverName', async (req, res) => {
     routes.forEach(route => {
       if (!customerMap.has(route.shipping_address_full_name)) {
         customerMap.set(route.shipping_address_full_name, {
-          _id: route._id, // Include _id
+          _id: route._id,
           order_code: route.FINAL,
           items: route.Items,
           address: route.shipping_address_address,
+          quantity: route.total_item_quantity, // Use correct field name
           phone: route.shipping_address_phone,
         });
       }
     });
 
     // Convert map to array of objects
-    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, phone }]) => ({
+    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone }]) => ({
       _id,
       name,         // This will be the name of the customer
       order_code,
       items,
       address,
+      total_quantity,
       phone,
     }));
 
+    
     res.json({ customers });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+// app.put('/api/update-delivery-status/:customerName', async (req, res) => {
+//   const { customerName } = req.params;
+//   const { deliveryStatus } = req.body;
+
+//   try {
+//     const result = await Route.updateMany(
+//       { shipping_address_full_name: customerName },
+//       { $set: { Delivery_Status: deliveryStatus } }
+//     );
+
+//     if (result.matchedCount === 0) {
+//       return res.status(404).send('No records found for the specified customer');
+//     }
+
+//     res.status(200).send('Delivery status updated successfully');
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Server error');
+//   }
+// });
+
+app.put('/api/update-delivery-status/:customerName', async (req, res) => {
+  const { customerName } = req.params;
+  const { deliveryStatus } = req.body;
+
+  try {
+    const result = await Route.updateMany(
+      {
+        Delivery_Status: { $in: ['', 'Replacement', null] }
+      },
+      { shipping_address_full_name: customerName },
+      { $set: { Delivery_Status: deliveryStatus } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send('No records found to update');
+    }
+
+    res.status(200).send('Delivery status updated successfully');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
+app.put('/api/update-rto-status/:customerName', async (req, res) => {
+  const { customerName } = req.params;
+  const { rtoStatus } = req.body;
+
+  try {
+    const result = await Route.updateMany(
+      {
+        Delivery_Status: { $in: ['Return', 'Reverse'] }
+      },
+      { shipping_address_full_name: customerName },
+      { $set: { Delivery_Status: rtoStatus } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send('No records found to update');
+    }
+
+    res.status(200).send('RTO status updated successfully');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
 
 
 // Server listening on port 5001

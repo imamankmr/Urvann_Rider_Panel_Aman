@@ -41,7 +41,7 @@ const MainTabNavigator = ({ navigation, route }) => {
           } else if (route.name === 'Daily Updates') {
             iconName = 'clipboard-list';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'Delivery') {
+          } else if (route.name === 'Order') {
             iconName = 'truck-delivery';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           }
@@ -72,7 +72,7 @@ const MainTabNavigator = ({ navigation, route }) => {
     >
       
       <Tab.Screen
-        name="Delivery"
+        name="Order"
         initialParams={{ driverName }}
         component={DeliveryTabNavigator} // Directly use DeliveryTabNavigator
       />

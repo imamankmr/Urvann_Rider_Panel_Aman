@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking } from 'react-native';
 import axios from 'axios';
-import { Linking } from 'react-native';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 
@@ -15,7 +14,7 @@ const DeliveryScreen = ({ route }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http://192.168.137.1:5001/api/customers/${driverName}`);
+        const response = await axios.get(`http://192.168.137.175:5001/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
         // Initialize user inputs and statuses with default values
@@ -38,7 +37,6 @@ const DeliveryScreen = ({ route }) => {
         setCustomers(fetchedCustomers);
         setLoading(false);
       } catch (error) {
-        console.error(error);
         setLoading(false);
       }
     };
@@ -96,7 +94,24 @@ const DeliveryScreen = ({ route }) => {
     });
   };
 
+  const updateDeliveryStatus = async (name, deliveryStatus) => {
+    try {
+      const response = await axios.put(`http://192.168.137.175:5001/api/update-delivery-status/${name}`, {
+        deliveryStatus
+      });
+      if (response.status === 200) {
+        alert('Delivery status updated successfully');
+      }
+    } catch (error) {
+      alert('Failed to update delivery status');
+    }
+  };
+
   const handleStatusChange = (id, value) => {
+    const name = customers.find(c => c._id === id)?.name;
+    if (name) {
+      updateDeliveryStatus(name, value); // Call the API to update status
+    }
     setStatuses(prev => ({
       ...prev,
       [id]: value
@@ -111,8 +126,6 @@ const DeliveryScreen = ({ route }) => {
         return '#d4edda'; // Green
       case 'Delivery failed':
         return '#f8d7da'; // Red
-      case 'Reattempt':
-        return '#fff3cd'; // Yellow
       default:
         return '#fff'; // Default background color
     }
@@ -121,7 +134,6 @@ const DeliveryScreen = ({ route }) => {
   const statusOptions = [
     { label: 'Delivered', value: 'Delivered' },
     { label: 'Delivery failed', value: 'Delivery failed' },
-    { label: 'Reattempt', value: 'Reattempt' },
   ];
 
   return (
@@ -132,8 +144,9 @@ const DeliveryScreen = ({ route }) => {
         renderItem={({ item }) => (
           <View style={[styles.itemContainer, { backgroundColor: getStatusColor(statuses[item._id]) }]}>
             <View style={styles.infoContainer}>
-              <Text style={styles.customerName}>Name: {item.name}</Text>
-              <Text style={styles.orderCode}>Order Code: {item.order_code}</Text>
+              <Text style={[styles.orderCode, { color: 'green' }]}>{item.order_code}</Text>
+              <Text style={styles.customerName}>{item.name}</Text>
+              <Text style={styles.address}>{item.address}</Text>
               <View style={styles.pickerContainer}>
                 <RNPickerSelect
                   placeholder={{ label: 'Select Status', value: null }}
@@ -215,6 +228,10 @@ const styles = StyleSheet.create({
   orderCode: {
     fontSize: 16,
     marginBottom: 4,
+  },
+  address: {
+    fontSize: 16,
+    marginBottom: 4,
     color: '#666',
   },
   textInputContainer: {
@@ -232,73 +249,65 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   counterButton: {
-    backgroundColor: '#287238',
-    borderRadius: 5,
-    width: 30, // Increase size for easier tapping
-    height: 30, // Increase size for easier tapping
+    width: 30,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 5,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
   },
   counterButtonText: {
-    color: '#fff',
-    fontSize: 20, // Adjust font size for better visibility
+    fontSize: 20,
+    color: '#333',
+  },
+  textInput: {
+    width: 50,
+    height: 30,
+    textAlign: 'center',
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginHorizontal: 8,
   },
   counterValue: {
     fontSize: 16,
     color: '#333',
-    marginHorizontal: 10,
   },
-  textInput: {
-    borderBottomWidth: 1,
-    borderColor: '#287238',
-    paddingHorizontal: 8,
-    width: 40, // Increase width for easier input
-    textAlign: 'center',
+  pickerContainer: {
+    marginTop: 10,
   },
   iconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconButton: {
-    marginLeft: 30,
-  },
-  pickerContainer: {
-    marginBottom: 16, // Add space between picker and other fields
+    marginHorizontal: 8,
   },
 });
 
-// Styles for the dropdown picker
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
     fontSize: 16,
     paddingVertical: 12,
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: '#287238',
-    borderRadius: 10, // Rounded corners for a more modern look
+    borderColor: '#ddd',
+    borderRadius: 4,
     color: '#333',
-    backgroundColor: '#f9f9f9', // White background for better contrast
-    width: 200,
-    marginTop: 7,
-    elevation: 1, // Add slight shadow
+    paddingRight: 30,
   },
   inputAndroid: {
     fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#287238',
-    borderRadius: 10, // Rounded corners for a more modern look
+    borderColor: '#ddd',
+    borderRadius: 8,
     color: '#333',
-    backgroundColor: '#f9f9f9', // White background for better contrast
-    width: 200,
-    marginTop: 7,
-    elevation: 1, // Add slight shadow
+    paddingRight: 30,
   },
   placeholder: {
-    color: '#aaa', // Light gray color for placeholder
-    fontSize: 16,
+    color: '#aaa',
   },
 });
 

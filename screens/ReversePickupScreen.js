@@ -3,25 +3,28 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 
-const RiderCodesScreen = ({ route }) => {
+const ReversePickupScreen = ({ route }) => {
   const [sellers, setSellers] = useState([]);
   const navigation = useNavigation();
-  const { driverName, endpoint } = route.params || {}; // Extract driverName and endpoint from route params
+  const { driverName } = route.params; // Extract driverName from route params
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/driver/${driverName}/sellers/${endpoint}`);
+    axios.get(`http://192.168.137.175:5001/api/driver/${driverName}/reverse-pickup-sellers`)
+      .then(response => {
         setSellers(response.data);
-      } catch (error) {
-        console.error(`Error fetching seller names for ${driverName}:`, error);
-      }
-    };
-    fetchData();
-  }, [driverName, endpoint]);
+      })
+      .catch(error => console.error(`Error fetching reverse pickup sellers for ${driverName}:`, error));
+  }, [driverName]);
 
   const handleSellerPress = (sellerName) => {
-    navigation.navigate('ProductDetails', { driverName, sellerName });
+    // Define the endpoint for the PickupDetails screen
+    const endpoint = '/api/reverse-pickup-products';  // Adjust this endpoint as needed
+  
+    navigation.navigate('ProductDetails', {
+      driverName,
+      sellerName,
+      endpoint  // Pass the endpoint parameter
+    });
   };
 
   return (
@@ -81,4 +84,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RiderCodesScreen;
+export default ReversePickupScreen;

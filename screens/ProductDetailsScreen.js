@@ -2,11 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProductDetailsScreen = ({ route }) => {
-  const { sellerName, driverName } = route.params;
+  const { sellerName, driverName, endpoint } = route.params;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [orderCodeQuantities, setOrderCodeQuantities] = useState({});
@@ -37,7 +36,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://192.168.137.1:5001/api/products`, {
+        const response = await axios.get(`http://192.168.137.175:5001${endpoint}`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -86,7 +85,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post('http://192.168.137.1:5001/api/update-pickup-status-bulk', {
+      await axios.post('http://192.168.137.175:5001/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         finalCode,
@@ -126,7 +125,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('http://192.168.137.1:5001/api/update-pickup-status', {
+      await axios.post('http://192.168.137.175:5001/api/update-pickup-status', {
         sku,
         orderCode,
         status: newStatus

@@ -2,18 +2,16 @@ import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import DeliveryScreen from './DeliveryScreen';
 import RTOScreen from './RTOScreen';
-import RiderCodesScreen from './RiderCodesScreen';
-import { View, Text } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import PickupTabNavigator from './PickupTabNavigator';
 
 const Tab = createMaterialTopTabNavigator();
 
 const DeliveryTabNavigator = ({ route }) => {
-  const { driverName } = route.params;
+  const { driverName } = route.params; // Use default empty object if route.params is undefined
 
   return (
     <Tab.Navigator
-      initialRouteName="Delivery"
+      initialRouteName="PickupTabs"
       screenOptions={{
         tabBarActiveTintColor: '#287238',
         tabBarInactiveTintColor: '#888',
@@ -32,30 +30,26 @@ const DeliveryTabNavigator = ({ route }) => {
           height: 3,
           borderRadius: 2,
         },
-       
       }}
     >
       <Tab.Screen
-        name="Pickup"
+        name="PickupTabs"
+        component={PickupTabNavigator}
+        initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ tabBarLabel: 'Pickup' }}
-        initialParams={{ driverName }}
-      >
-        {(props) => <RiderCodesScreen {...props} driverName={driverName} />}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="Delivery"
+        component={DeliveryScreen}
+        initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ tabBarLabel: 'Delivery' }}
-        initialParams={{ driverName }}
-      >
-        {(props) => <DeliveryScreen {...props} driverName={driverName} />}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="RTO"
+        component={RTOScreen}
+        initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ tabBarLabel: 'RTO' }}
-        initialParams={{ driverName }}
-      >
-        {(props) => <RTOScreen {...props} driverName={driverName} />}
-      </Tab.Screen>
+      />
     </Tab.Navigator>
   );
 };
