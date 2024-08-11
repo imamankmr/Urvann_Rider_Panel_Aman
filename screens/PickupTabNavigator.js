@@ -13,7 +13,7 @@ const PickupTabNavigator = ({ route }) => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#f0f4f8',
+          backgroundColor: '#f9f9f9',
           borderTopWidth: 1,
           borderTopColor: '#e0e0e0',
           elevation: 5, // Adds shadow for Android

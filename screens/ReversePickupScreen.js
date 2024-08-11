@@ -9,7 +9,7 @@ const ReversePickupScreen = ({ route }) => {
   const { driverName } = route.params; // Extract driverName from route params
 
   useEffect(() => {
-    axios.get(`http://192.168.137.175:5001/api/driver/${driverName}/reverse-pickup-sellers`)
+    axios.get(`http:///10.5.16.226:5001/api/driver/${driverName}/reverse-pickup-sellers`)
       .then(response => {
         setSellers(response.data);
       })
@@ -20,7 +20,7 @@ const ReversePickupScreen = ({ route }) => {
     // Define the endpoint for the PickupDetails screen
     const endpoint = '/api/reverse-pickup-products';  // Adjust this endpoint as needed
   
-    navigation.navigate('ProductDetails', {
+    navigation.navigate('ReverseProductDetails', {
       driverName,
       sellerName,
       endpoint  // Pass the endpoint parameter
@@ -53,7 +53,7 @@ const ReversePickupScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#f9f9f9',
     paddingHorizontal: 15,
     paddingTop: 20,
   },

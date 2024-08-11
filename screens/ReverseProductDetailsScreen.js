@@ -4,7 +4,7 @@ import axios from 'axios';
 import Swiper from 'react-native-swiper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ProductDetailsScreen = ({ route }) => {
+const ReverseProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName, endpoint } = route.params;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,10 +26,10 @@ const ProductDetailsScreen = ({ route }) => {
   const loadPickupStatusLocally = async (sku, orderCode) => {
     try {
       const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
-      return status || "Not Picked";
+      return status || "Not Delivered";
     } catch (error) {
       console.error('Error loading pickup status:', error);
-      return "Not Picked";
+      return "Not Delivered";
     }
   };
 
@@ -60,7 +60,7 @@ const ProductDetailsScreen = ({ route }) => {
           if (!initialSelectAll[product.FINAL]) {
             initialSelectAll[product.FINAL] = true;
           }
-          if (product["Pickup Status"] === "Not Picked") {
+          if (product["Pickup Status"] === "Not Delivered") {
             initialSelectAll[product.FINAL] = false;
           }
         });
@@ -81,7 +81,7 @@ const ProductDetailsScreen = ({ route }) => {
   };
 
   const toggleSelectAll = async (finalCode) => {
-    const newStatus = !selectAll[finalCode] ? "Picked" : "Not Picked";
+    const newStatus = !selectAll[finalCode] ? "Delivered" : "Not Delivered";
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
@@ -110,7 +110,7 @@ const ProductDetailsScreen = ({ route }) => {
   const toggleProductStatus = async (sku, orderCode) => {
     const updatedProducts = products.map(product => {
       if (product.line_item_sku === sku && product.FINAL === orderCode) {
-        const newStatus = product["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
+        const newStatus = product["Pickup Status"] === "Not Delivered" ? "Delivered" : "Not Delivered";
         return { ...product, "Pickup Status": newStatus };
       }
       return product;
@@ -133,10 +133,10 @@ const ProductDetailsScreen = ({ route }) => {
   
       await savePickupStatusLocally(sku, orderCode, newStatus);
   
-      const allPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Picked");
-      const allNotPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Picked");
+      const allDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Delivered");
+      const allNotDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Delivered");
   
-      setSelectAll(prev => ({ ...prev, [orderCode]: allPicked ? true : allNotPicked ? false : false }));
+      setSelectAll(prev => ({ ...prev, [orderCode]: allDelivered ? true : allNotDelivered ? false : false }));
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
@@ -164,7 +164,7 @@ const ProductDetailsScreen = ({ route }) => {
         </TouchableOpacity>
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
-            <View style={[styles.productContainer, product["Pickup Status"] === "Picked" ? styles.picked : styles.notPicked]}>
+            <View style={[styles.productContainer, product["Pickup Status"] === "Delivered" ? styles.delivered : styles.notDelivered]}>
               <TouchableOpacity onPress={() => handleImagePress(product)}>
                 <Image source={{ uri: product.image1 }} style={styles.image} />
               </TouchableOpacity>
@@ -172,7 +172,7 @@ const ProductDetailsScreen = ({ route }) => {
                 <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
                 <Text style={styles.text}>Name: {product.line_item_name}</Text>
                 <Text style={styles.text}>Quantity: {product.total_item_quantity}</Text>
-                <Text style={[styles.statusText, product["Pickup Status"] === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+                <Text style={[styles.statusText, product["Pickup Status"] === "Delivered" ? styles.deliveredStatus : styles.notDeliveredStatus]}>
                   {product["Pickup Status"]}
                 </Text>
               </View>
@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
   },
   scrollViewContainer: {
     paddingBottom: 20,
-    // paddingTop: 10,
     backgroundColor: '#fff',
   },
   orderContainer: {
@@ -284,7 +283,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
- 
   image: {
     width: 100,
     height: 100,
@@ -305,10 +303,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-  pickedStatus: {
+  deliveredStatus: {
     color: '#28a745',
   },
-  notPickedStatus: {
+  notDeliveredStatus: {
     color: '#dc3545',
   },
   modalContainer: {
@@ -333,13 +331,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 10,
   },
-
-  picked: {
+  delivered: {
     backgroundColor: '#d4edda',
   },
-  notPicked: {
+  notDelivered: {
     backgroundColor: '#f9f9f9',
   },
 });
 
-export default ProductDetailsScreen;
+export default ReverseProductDetailsScreen;

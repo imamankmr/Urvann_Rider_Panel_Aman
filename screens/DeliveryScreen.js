@@ -14,7 +14,7 @@ const DeliveryScreen = ({ route }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http://192.168.137.175:5001/api/customers/${driverName}`);
+        const response = await axios.get(`http:///10.5.16.226:5001/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
         // Initialize user inputs and statuses with default values
@@ -96,7 +96,7 @@ const DeliveryScreen = ({ route }) => {
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
-      const response = await axios.put(`http://192.168.137.175:5001/api/update-delivery-status/${name}`, {
+      const response = await axios.put(`http:///10.5.16.226:5001/api/update-delivery-status/${name}`, {
         deliveryStatus
       });
       if (response.status === 200) {
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f9f9f9',
   },
   itemContainer: {
     flexDirection: 'row',
@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
   },
   orderCode: {
     fontSize: 16,
+    fontWeight: 'bold', // Make orderCode bold
     marginBottom: 4,
   },
   address: {
@@ -291,7 +292,7 @@ const pickerSelectStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#f9f9f9',
     borderRadius: 4,
     color: '#333',
     paddingRight: 30,
@@ -302,6 +303,7 @@ const pickerSelectStyles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#ddd',
+    backgroundColor:'#D3D3D3',
     borderRadius: 8,
     color: '#333',
     paddingRight: 30,

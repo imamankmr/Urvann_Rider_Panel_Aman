@@ -1,8 +1,8 @@
 import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import DeliveryScreen from './DeliveryScreen';
-import RTOScreen from './RTOScreen';
 import PickupTabNavigator from './PickupTabNavigator';
+import RTOStackNavigator from './RTOStackNavigator'; // Import the new stack navigator
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -45,8 +45,8 @@ const DeliveryTabNavigator = ({ route }) => {
         options={{ tabBarLabel: 'Delivery' }}
       />
       <Tab.Screen
-        name="RTO"
-        component={RTOScreen}
+        name="RTOStack"
+        component={RTOStackNavigator}
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ tabBarLabel: 'RTO' }}
       />

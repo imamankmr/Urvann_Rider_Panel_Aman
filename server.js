@@ -116,9 +116,9 @@ app.get('/api/driver/:driverName/pickup-sellers', async (req, res) => {
     const sellers = await Route.find({
       'Driver Name': driverName,
       $or: [
-        { Delivery_Status: { $in: ['Empty', 'Replacement'] } },
-        { Delivery_Status: { $eq: null } },  // Add condition for null
-        { Delivery_Status: { $eq: '' } }     // Add condition for empty string
+        { metafield_order_type: { $in: ['Replacement'] } },
+        { metafield_order_type: { $eq: null } },  // Add condition for null
+        { metafield_order_type: { $eq: '' } }     // Add condition for empty string
       ]
     }).distinct('seller_name');
 
@@ -128,9 +128,9 @@ app.get('/api/driver/:driverName/pickup-sellers', async (req, res) => {
           'Driver Name': driverName, 
           seller_name: sellerName, 
           $or: [
-            { Delivery_Status: { $in: ['Empty', 'Replacement'] } },
-            { Delivery_Status: { $eq: null } },
-            { Delivery_Status: { $eq: '' } }
+            { metafield_order_type: { $in: ['Replacement'] } },
+            { metafield_order_type: { $eq: null } },
+            { metafield_order_type: { $eq: '' } }
           ]
         } },
         { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
@@ -155,11 +155,11 @@ app.get('/api/driver/:driverName/reverse-pickup-sellers', async (req, res) => {
   console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
 
   try {
-    const sellers = await Route.find({ 'Driver Name': driverName, Delivery_Status: { $in: ['Return', 'Reverse'] } }).distinct('seller_name');
+    const sellers = await Route.find({ 'Driver Name': driverName, metafield_order_type: { $in: ['Delivery Failed','Replacement', 'Reverse Pickup'] } }).distinct('seller_name');
 
     const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
       const productCount = await Route.aggregate([
-        { $match: { 'Driver Name': driverName, seller_name: sellerName, Delivery_Status: { $in: ['Return', 'Reverse'] } } },
+        { $match: { 'Driver Name': driverName, seller_name: sellerName, metafield_order_type: { $in: ['Delivery Failed','Replacement', 'Reverse Pickup'] } } },
         { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
       ]);
       return {
@@ -226,10 +226,10 @@ app.get('/api/pickup-products', async (req, res) => {
       seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
       "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
       $or: [
-        { Delivery_Status: 'Empty' },
-        { Delivery_Status: 'Replacement' },
-        { Delivery_Status: { $eq: null } }, // Adding null condition
-        { Delivery_Status: { $eq: '' } }    // Adding empty string condition
+
+        { metafield_order_type: 'Replacement' },
+        { metafield_order_type: { $eq: null } }, // Adding null condition
+        { metafield_order_type: { $eq: '' } }    // Adding empty string condition
       ]
     };
 
@@ -272,8 +272,9 @@ app.get('/api/reverse-pickup-products', async (req, res) => {
       seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
       "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
       $or: [
-        { Delivery_Status: 'Return' },
-        { Delivery_Status: 'Reverse' }
+        { metafield_order_type: 'Reverse Pickup' },
+        { metafield_order_type: 'Replacement' },
+        { metafield_order_type:'Delivery Failed'},
       ]
     };
 
@@ -468,8 +469,8 @@ app.get('/api/customers/:driverName', async (req, res) => {
 
     // Define the filter conditions for Delivery_Status
     const filterConditions = [
-      { 'Delivery_Status': { $exists: false } }, // No Delivery_Status field
-      { 'Delivery_Status': 'Replacement' }
+      { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
+      { 'metafield_order_type': 'Replacement' }
     ];
 
     const routes = await Route.find({ 
@@ -528,8 +529,9 @@ app.get('/api/rtoscreen/:driverName', async (req, res) => {
 
     // Define the filter conditions for Delivery_Status
     const filterConditions = [
-      { 'Delivery_Status': 'Return' },
-      { 'Delivery_Status': 'Reverse' }
+      { 'metafield_order_type': 'Replacement' },
+      { 'metafield_order_type': 'Reverse Pickup' },
+      { 'metafield_order_type': 'Delivery Failed' },
     ];
 
     // Fetch routes with the given driver name and filter conditions
@@ -552,14 +554,15 @@ app.get('/api/rtoscreen/:driverName', async (req, res) => {
           order_code: route.FINAL,
           items: route.Items,
           address: route.shipping_address_address,
-          quantity: route.total_item_quantity, // Use correct field name
+          total_quantity: route.total_item_quantity, // Corrected field name
           phone: route.shipping_address_phone,
+          metafield_order_status: route.metafield_order_type, // Include metafield_order_status
         });
       }
     });
 
     // Convert map to array of objects
-    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone }]) => ({
+    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_order_status }]) => ({
       _id,
       name,         // This will be the name of the customer
       order_code,
@@ -567,9 +570,9 @@ app.get('/api/rtoscreen/:driverName', async (req, res) => {
       address,
       total_quantity,
       phone,
+      metafield_order_status, // Include in the final customer object
     }));
 
-    
     res.json({ customers });
   } catch (error) {
     console.error(error);
@@ -577,6 +580,57 @@ app.get('/api/rtoscreen/:driverName', async (req, res) => {
   }
 });
 
+// Define endpoint to fetch product details based on order_id
+// server.js or app.js
+app.get('/rtoscreen/product-details', async (req, res) => {
+  try {
+    // Extract query parameters
+    const { order_code, metafield_order_type } = req.query;
+
+    // Log parameters for debugging
+    console.log('Received query parameters:', req.query);
+
+    // Check if parameters are missing
+    if (!order_code || !metafield_order_type) {
+      console.log('Missing query parameters');
+      return res.status(400).json({ message: 'Missing required query parameters' });
+    }
+
+    // Fetch route details based on query parameters
+    const routeDetails = await Route.findOne({
+      FINAL: order_code,
+      metafield_order_type: metafield_order_type
+    });
+
+    console.log('Route details:', routeDetails);
+
+    if (!routeDetails) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Fetch product details based on SKU from routeDetails
+    const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
+
+    console.log('Product details:', productDetails);
+
+    if (!productDetails) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Send response with product details
+    const response = {
+      line_item_sku: routeDetails.line_item_sku,
+      line_item_name: routeDetails.line_item_name,
+      image1: productDetails.image_url || null,
+      total_item_quantity: routeDetails.total_item_quantity
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching product details:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // app.put('/api/update-delivery-status/:customerName', async (req, res) => {
 //   const { customerName } = req.params;
@@ -606,10 +660,10 @@ app.put('/api/update-delivery-status/:customerName', async (req, res) => {
   try {
     const result = await Route.updateMany(
       {
-        Delivery_Status: { $in: ['', 'Replacement', null] }
+        metafield_delivery_status: { $in: ['', 'Replacement', null] }
       },
       { shipping_address_full_name: customerName },
-      { $set: { Delivery_Status: deliveryStatus } }
+      { $set: { metafield_delivery_status: deliveryStatus } }
     );
 
     if (result.matchedCount === 0) {
@@ -630,10 +684,10 @@ app.put('/api/update-rto-status/:customerName', async (req, res) => {
   try {
     const result = await Route.updateMany(
       {
-        Delivery_Status: { $in: ['Return', 'Reverse'] }
+        metafield_delivery_status: { $in: ['Reverse Pickup','Replacement'] }
       },
       { shipping_address_full_name: customerName },
-      { $set: { Delivery_Status: rtoStatus } }
+      { $set: { metafield_delivery_status: rtoStatus } }
     );
 
     if (result.matchedCount === 0) {
