@@ -36,7 +36,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http:///10.5.16.226:5001${endpoint}`, {
+        const response = await axios.get(`http://10.5.16.226:5001${endpoint}`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -85,7 +85,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post('http:///10.5.16.226:5001/api/update-pickup-status-bulk', {
+      await axios.post('http://10.5.16.226:5001/api/update-pickup-status-bulk', {
         sellerName,
         driverName,
         finalCode,
@@ -125,7 +125,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('http:///10.5.16.226:5001/api/update-pickup-status', {
+      await axios.post('http://10.5.16.226:5001/api/update-pickup-status', {
         sku,
         orderCode,
         status: newStatus

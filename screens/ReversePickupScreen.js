@@ -9,7 +9,7 @@ const ReversePickupScreen = ({ route }) => {
   const { driverName } = route.params; // Extract driverName from route params
 
   useEffect(() => {
-    axios.get(`http:///10.5.16.226:5001/api/driver/${driverName}/reverse-pickup-sellers`)
+    axios.get(`http://10.5.16.226:5001/api/driver/${driverName}/reverse-pickup-sellers`)
       .then(response => {
         setSellers(response.data);
       })

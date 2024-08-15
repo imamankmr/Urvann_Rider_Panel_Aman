@@ -16,7 +16,7 @@ const RTOScreen = ({ route }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http:///10.5.16.226:5001/api/rtoscreen/${driverName}`);
+        const response = await axios.get(`http://10.5.16.226:5001/api/rtoscreen/${driverName}`);
         const fetchedCustomers = response.data.customers;
         const initialUserInputs = {};
         const initialStatuses = {};
@@ -79,7 +79,9 @@ const RTOScreen = ({ route }) => {
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
-      const response = await axios.put(`http:///10.5.16.226:5001/api/update-rto-status/${name}`, { deliveryStatus });
+      const response = await axios.put(`http://10.5.16.226:5001/api/update-rto-status/${name}`, {
+        deliveryStatus
+      });
       if (response.status === 200) {
         alert('Delivery status updated successfully');
       }

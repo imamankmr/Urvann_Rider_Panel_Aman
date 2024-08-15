@@ -13,22 +13,22 @@ const ReverseProductDetailsScreen = ({ route }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectAll, setSelectAll] = useState({});
 
-  // Function to save pickup status locally
-  const savePickupStatusLocally = async (sku, orderCode, status) => {
+  // Function to save delivery status locally
+  const saveDeliveryStatusLocally = async (sku, orderCode, status) => {
     try {
       await AsyncStorage.setItem(`${sku}_${orderCode}`, status);
     } catch (error) {
-      console.error('Error saving pickup status:', error);
+      console.error('Error saving delivery status:', error);
     }
   };
 
-  // Function to load pickup status locally
-  const loadPickupStatusLocally = async (sku, orderCode) => {
+  // Function to load delivery status locally
+  const loadDeliveryStatusLocally = async (sku, orderCode) => {
     try {
       const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
       return status || "Not Delivered";
     } catch (error) {
-      console.error('Error loading pickup status:', error);
+      console.error('Error loading delivery status:', error);
       return "Not Delivered";
     }
   };
@@ -36,7 +36,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http:///10.5.16.226:5001${endpoint}`, {
+        const response = await axios.get(`http://10.5.16.226:5001${endpoint}`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -44,10 +44,10 @@ const ReverseProductDetailsScreen = ({ route }) => {
         });
         
         const fetchedProducts = await Promise.all(response.data.products.map(async product => {
-          const localStatus = await loadPickupStatusLocally(product.line_item_sku, product.FINAL);
+          const localStatus = await loadDeliveryStatusLocally(product.line_item_sku, product.FINAL);
           return {
             ...product,
-            "Pickup Status": localStatus
+            "Delivery Status": localStatus
           };
         }));
 
@@ -60,7 +60,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
           if (!initialSelectAll[product.FINAL]) {
             initialSelectAll[product.FINAL] = true;
           }
-          if (product["Pickup Status"] === "Not Delivered") {
+          if (product["Delivery Status"] === "Not Delivered") {
             initialSelectAll[product.FINAL] = false;
           }
         });
@@ -85,33 +85,33 @@ const ReverseProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post('http:///10.5.16.226:5001/api/update-pickup-status-bulk', {
+      await axios.post('http://10.5.16.226:5001/api/update-delivery-status-bulk', {
         sellerName,
         driverName,
         finalCode,
         status: newStatus
       });
       const updatedProducts = products.map(product =>
-        product.FINAL === finalCode ? { ...product, "Pickup Status": newStatus } : product
+        product.FINAL === finalCode ? { ...product, "Delivery Status": newStatus } : product
       );
       setProducts(updatedProducts);
   
       await Promise.all(updatedProducts.map(async product => {
         if (product.FINAL === finalCode) {
-          await savePickupStatusLocally(product.line_item_sku, finalCode, newStatus);
+          await saveDeliveryStatusLocally(product.line_item_sku, finalCode, newStatus);
         }
       }));
   
     } catch (error) {
-      console.error('Error updating pickup status in bulk:', error);
+      console.error('Error updating delivery status in bulk:', error);
     }
   };
 
   const toggleProductStatus = async (sku, orderCode) => {
     const updatedProducts = products.map(product => {
       if (product.line_item_sku === sku && product.FINAL === orderCode) {
-        const newStatus = product["Pickup Status"] === "Not Delivered" ? "Delivered" : "Not Delivered";
-        return { ...product, "Pickup Status": newStatus };
+        const newStatus = product["Delivery Status"] === "Not Delivered" ? "Delivered" : "Not Delivered";
+        return { ...product, "Delivery Status": newStatus };
       }
       return product;
     });
@@ -124,21 +124,21 @@ const ReverseProductDetailsScreen = ({ route }) => {
         console.error(`Product with SKU ${sku} and order code ${orderCode} not found.`);
         return;
       }
-      const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('http:///10.5.16.226:5001/api/update-pickup-status', {
+      const newStatus = productToUpdate["Delivery Status"];
+      await axios.post('http://10.5.16.226:5001/api/update-delivery-status', {
         sku,
         orderCode,
         status: newStatus
       });
   
-      await savePickupStatusLocally(sku, orderCode, newStatus);
+      await saveDeliveryStatusLocally(sku, orderCode, newStatus);
   
-      const allDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Delivered");
-      const allNotDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Delivered");
+      const allDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Delivery Status"] === "Delivered");
+      const allNotDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Delivery Status"] === "Not Delivered");
   
       setSelectAll(prev => ({ ...prev, [orderCode]: allDelivered ? true : allNotDelivered ? false : false }));
     } catch (error) {
-      console.error('Error updating pickup status:', error);
+      console.error('Error updating delivery status:', error);
     }
   };
 
@@ -164,7 +164,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
         </TouchableOpacity>
         {groupedProducts[finalCode].map((product, index) => (
           <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
-            <View style={[styles.productContainer, product["Pickup Status"] === "Delivered" ? styles.delivered : styles.notDelivered]}>
+            <View style={[styles.productContainer, product["Delivery Status"] === "Delivered" ? styles.delivered : styles.notDelivered]}>
               <TouchableOpacity onPress={() => handleImagePress(product)}>
                 <Image source={{ uri: product.image1 }} style={styles.image} />
               </TouchableOpacity>
@@ -172,8 +172,8 @@ const ReverseProductDetailsScreen = ({ route }) => {
                 <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
                 <Text style={styles.text}>Name: {product.line_item_name}</Text>
                 <Text style={styles.text}>Quantity: {product.total_item_quantity}</Text>
-                <Text style={[styles.statusText, product["Pickup Status"] === "Delivered" ? styles.deliveredStatus : styles.notDeliveredStatus]}>
-                  {product["Pickup Status"]}
+                <Text style={[styles.statusText, product["Delivery Status"] === "Delivered" ? styles.deliveredStatus : styles.notDeliveredStatus]}>
+                  {product["Delivery Status"]}
                 </Text>
               </View>
             </View>
@@ -210,6 +210,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
                 <Text style={styles.modalText}>SKU: {selectedProduct.line_item_sku}</Text>
                 <Text style={styles.modalText}>Name: {selectedProduct.line_item_name}</Text>
                 <Text style={styles.modalText}>Quantity: {selectedProduct.total_item_quantity}</Text>
+                <Text style={styles.modalText}>Delivery Status: {selectedProduct["Delivery Status"]}</Text>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -223,119 +224,97 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 20,
   },
+  wrapper: {},
   scrollViewContainer: {
-    paddingBottom: 20,
-    backgroundColor: '#fff',
+    paddingVertical: 10,
   },
   orderContainer: {
-    backgroundColor: '#ffffff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    width: '90%',
-    alignSelf: 'center',
-    marginBottom: 20,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  selectAllContainer: {
+    paddingHorizontal: 10,
     marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#e0e0e0',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    width: '90%',
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
-  selectAllText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   header: {
     fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
   },
   subHeader: {
-    fontSize: 20,
-    color: '#555',
-    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+  },
+  selectAllContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#007bff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    marginVertical: 5,
+    marginHorizontal: 10,
+  },
+  selectAllText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   productContainer: {
     flexDirection: 'row',
-    marginBottom: 15,
-    backgroundColor: '#ffffff',
-    padding: 15,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 10,
-    width: '90%',
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    resizeMode: 'cover',
-    marginRight: 15,
-    borderRadius: 10,
-  },
-  textContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  text: {
-    fontSize: 16,
-    marginBottom: 1,
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  deliveredStatus: {
-    color: '#28a745',
-  },
-  notDeliveredStatus: {
-    color: '#dc3545',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    margin: 20,
-  },
-  fullScreenImage: {
-    width: 300,
-    height: 300,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  modalText: {
-    fontSize: 18,
+    padding: 10,
+    marginHorizontal: 10,
     marginBottom: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
   delivered: {
     backgroundColor: '#d4edda',
   },
   notDelivered: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f8d7da',
+  },
+  textContainer: {
+    flex: 1,
+    paddingLeft: 10,
+    justifyContent: 'center',
+  },
+  text: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  deliveredStatus: {
+    color: '#155724',
+  },
+  notDeliveredStatus: {
+    color: '#721c24',
+  },
+  image: {
+    width: 80,
+    height: 80,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: 200,
+    marginBottom: 20,
+    borderRadius: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 10,
   },
 });
 

@@ -294,7 +294,7 @@ app.get('/api/reverse-pickup-products', async (req, res) => {
       line_item_name: data.line_item_name,
       image1: photoMap[data.line_item_sku] || null,
       total_item_quantity: data.total_item_quantity,
-      "Pickup Status": data.Pickup_Status
+      "Delivery Status": data.Delivery_Status
     }));
 
     const orderCodeQuantities = products.reduce((acc, product) => {
@@ -679,15 +679,15 @@ app.put('/api/update-delivery-status/:customerName', async (req, res) => {
 
 app.put('/api/update-rto-status/:customerName', async (req, res) => {
   const { customerName } = req.params;
-  const { rtoStatus } = req.body;
+  const { deliveryStatus } = req.body;
 
   try {
     const result = await Route.updateMany(
       {
-        metafield_delivery_status: { $in: ['Reverse Pickup','Replacement'] }
+        shipping_address_full_name: customerName,
+        metafield_delivery_status: { $in: ['Reverse Pickup', 'Replacement'] }
       },
-      { shipping_address_full_name: customerName },
-      { $set: { metafield_delivery_status: rtoStatus } }
+      { $set: { metafield_delivery_status: deliveryStatus } }
     );
 
     if (result.matchedCount === 0) {
@@ -700,7 +700,6 @@ app.put('/api/update-rto-status/:customerName', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
-
 
 
 // Server listening on port 5001

@@ -14,7 +14,7 @@ const DeliveryScreen = ({ route }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http:///10.5.16.226:5001/api/customers/${driverName}`);
+        const response = await axios.get(`http://10.5.16.226:5001/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
         // Initialize user inputs and statuses with default values
@@ -96,7 +96,7 @@ const DeliveryScreen = ({ route }) => {
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
-      const response = await axios.put(`http:///10.5.16.226:5001/api/update-delivery-status/${name}`, {
+      const response = await axios.put(`http://10.5.16.226:5001/api/update-delivery-status/${name}`, {
         deliveryStatus
       });
       if (response.status === 200) {
