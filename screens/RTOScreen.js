@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Button, Linking } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import { useNavigation } from '@react-navigation/native';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 
 const RTOScreen = ({ route }) => {
   const [customers, setCustomers] = useState([]);
@@ -135,74 +136,84 @@ const RTOScreen = ({ route }) => {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <FlatList
-        data={customers}
-        keyExtractor={keyExtractor}
-        renderItem={({ item }) => (
-          <View style={[styles.itemContainer, { backgroundColor: getStatusColor(statuses[item._id]) }]}>
-            <View style={styles.infoContainer}>
-              <View style={styles.orderCodeContainer}>
-                <Text style={styles.orderCode}>{item.order_code}</Text>
-                <Text style={styles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
-              </View>
-              <Text style={styles.customerName}>{item.name}</Text>
-              <Text style={styles.address}>{item.address}</Text>
-              <View style={styles.pickerContainer}>
-                <RNPickerSelect
-                  placeholder={{ label: 'Select Status', value: null }}
-                  items={getStatusOptions(item.metafield_order_status)}
-                  onValueChange={(value) => handleStatusChange(item._id, value)}
-                  style={pickerSelectStyles}
-                  value={statuses[item._id]}
-                />
-              </View>
-              {statuses[item._id] === 'Delivered' && (
-                <View style={styles.textInputContainer}>
-                  <Text style={styles.textLabel}>Items Delivered:</Text>
-                  <View style={styles.counterContainer}>
-                    <TouchableOpacity
-                      style={styles.counterButton}
-                      onPress={() => handleDecrement(item._id)}
-                    >
-                      <Text style={styles.counterButtonText}>-</Text>
-                    </TouchableOpacity>
-                    <TextInput
-                      style={styles.textInput}
-                      keyboardType="numeric"
-                      value={userInputs[item._id]}
-                      onChangeText={(text) => handleInputChange(item._id, text)}
-                    />
-                    <TouchableOpacity
-                      style={styles.counterButton}
-                      onPress={() => handleIncrement(item._id)}
-                    >
-                      <Text style={styles.counterButtonText}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.counterValue}>
-                    {`/${customers.find(c => c._id === item._id)?.items || 0}`}
-                  </Text>
-                </View>
-              )}
+  const renderItem = ({ item, drag, isActive }) => (
+    <TouchableOpacity
+      style={[
+        styles.itemContainer,
+        { backgroundColor: getStatusColor(statuses[item._id]), opacity: isActive ? 0.9 : 1 }
+      ]}
+      onLongPress={drag}
+      delayLongPress={150}
+    >
+      <View style={styles.infoContainer}>
+        <View style={styles.orderCodeContainer}>
+          <Text style={styles.orderCode}>{item.order_code}</Text>
+          <Text style={styles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
+        </View>
+        <Text style={styles.customerName}>{item.name}</Text>
+        <Text style={styles.address}>{item.address}</Text>
+        <View style={styles.pickerContainer}>
+          <RNPickerSelect
+            placeholder={{ label: 'Select Status', value: null }}
+            items={getStatusOptions(item.metafield_order_status)}
+            onValueChange={(value) => handleStatusChange(item._id, value)}
+            style={pickerSelectStyles}
+            value={statuses[item._id]}
+          />
+        </View>
+        {statuses[item._id] === 'Delivered' && (
+          <View style={styles.textInputContainer}>
+            <Text style={styles.textLabel}>Items Delivered:</Text>
+            <View style={styles.counterContainer}>
               <TouchableOpacity
-                style={styles.detailsButton}
-                onPress={() => navigateToProductDetails(item.order_code, item.metafield_order_status)}
+                style={styles.counterButton}
+                onPress={() => handleDecrement(item._id)}
               >
-                <Text style={styles.detailsButtonText}>View Products</Text>
+                <Text style={styles.counterButtonText}>-</Text>
+              </TouchableOpacity>
+              <TextInput
+                style={styles.textInput}
+                keyboardType="numeric"
+                value={userInputs[item._id]}
+                onChangeText={(text) => handleInputChange(item._id, text)}
+              />
+              <TouchableOpacity
+                style={styles.counterButton}
+                onPress={() => handleIncrement(item._id)}
+              >
+                <Text style={styles.counterButtonText}>+</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.iconContainer}>
-              <TouchableOpacity onPress={() => openMap(item.address)} style={styles.iconButton}>
-                <MaterialCommunityIcons name="map-marker-outline" size={30} color="#287238" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => makeCall(item.phone)} style={styles.iconButton}>
-                <FontAwesome name="phone" size={30} color="#287238" />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.counterValue}>
+              {`/${customers.find(c => c._id === item._id)?.items || 0}`}
+            </Text>
           </View>
         )}
+        <TouchableOpacity
+          style={styles.detailsButton}
+          onPress={() => navigateToProductDetails(item.order_code, item.metafield_order_status)}
+        >
+          <Text style={styles.detailsButtonText}>View Products</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.iconContainer}>
+        <TouchableOpacity onPress={() => openMap(item.address)} style={styles.iconButton}>
+          <MaterialCommunityIcons name="map-marker-outline" size={30} color="#287238" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => makeCall(item.phone)} style={styles.iconButton}>
+          <FontAwesome name="phone" size={30} color="#287238" />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <DraggableFlatList
+        data={customers}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        onDragEnd={({ data }) => setCustomers(data)}
       />
     </View>
   );
@@ -333,7 +344,7 @@ const pickerSelectStyles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#ddd',
-    backgroundColor:'#D3D3D3',
+    backgroundColor: '#D3D3D3',
     borderRadius: 8,
     color: '#333',
     paddingRight: 30,

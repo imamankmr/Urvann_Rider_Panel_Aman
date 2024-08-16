@@ -155,12 +155,28 @@ app.get('/api/driver/:driverName/reverse-pickup-sellers', async (req, res) => {
   console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
 
   try {
-    const sellers = await Route.find({ 'Driver Name': driverName, metafield_order_type: { $in: ['Delivery Failed','Replacement', 'Reverse Pickup'] } }).distinct('seller_name');
+    const sellers = await Route.find({
+      'Driver Name': driverName,
+      metafield_order_type: { $in: ['Delivery Failed', 'Replacement', 'Reverse Pickup'] },
+      metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }
+    }).distinct('seller_name');
 
     const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
       const productCount = await Route.aggregate([
-        { $match: { 'Driver Name': driverName, seller_name: sellerName, metafield_order_type: { $in: ['Delivery Failed','Replacement', 'Reverse Pickup'] } } },
-        { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
+        {
+          $match: {
+            'Driver Name': driverName,
+            seller_name: sellerName,
+            metafield_order_type: { $in: ['Delivery Failed', 'Replacement', 'Reverse Pickup'] },
+            metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalQuantity: { $sum: '$total_item_quantity' }
+          }
+        }
       ]);
       return {
         sellerName,
@@ -175,6 +191,7 @@ app.get('/api/driver/:driverName/reverse-pickup-sellers', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 // GET /api/products
