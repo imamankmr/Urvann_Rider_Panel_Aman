@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Button, Linking } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Button, Linking, Alert } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import { useNavigation } from '@react-navigation/native';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 
 const RTOScreen = ({ route }) => {
   const [customers, setCustomers] = useState([]);
@@ -11,12 +12,13 @@ const RTOScreen = ({ route }) => {
   const [userInputs, setUserInputs] = useState({});
   const [statuses, setStatuses] = useState({});
   const driverName = route.params.driverName;
+  const [lockedStatuses, setLockedStatuses] = useState({}); // Add state to track locked statuses
   const navigation = useNavigation();
 
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http://10.5.16.226:5001/api/rtoscreen/${driverName}`);
+        const response = await axios.get(`http://10.5.16.225:5001/api/rtoscreen/${driverName}`);
         const fetchedCustomers = response.data.customers;
         const initialUserInputs = {};
         const initialStatuses = {};
@@ -24,12 +26,21 @@ const RTOScreen = ({ route }) => {
         fetchedCustomers.forEach(customer => {
           if (customer._id) {
             initialUserInputs[customer._id] = '0';
-            initialStatuses[customer._id] = '';
+            initialStatuses[customer._id] = customer.metafield_delivery_status || ''; // Set initial status
           }
         });
 
+        const initialLockedStatuses = fetchedCustomers.reduce((acc, customer) => {
+          if (customer._id && customer.metafield_delivery_status) {
+            acc[customer._id] = true; // Lock statuses that are already set
+          }
+          return acc;
+        }, {});
+
+
         setUserInputs(initialUserInputs);
         setStatuses(initialStatuses);
+        setLockedStatuses(initialLockedStatuses);
         setCustomers(fetchedCustomers);
       } catch (error) {
         console.error('Failed to fetch customers:', error);
@@ -79,7 +90,7 @@ const RTOScreen = ({ route }) => {
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
-      const response = await axios.put(`http://10.5.16.226:5001/api/update-rto-status/${name}`, {
+      const response = await axios.put(`http://10.5.16.225:5001/api/update-rto-status/${name}`, {
         deliveryStatus
       });
       if (response.status === 200) {
@@ -91,11 +102,47 @@ const RTOScreen = ({ route }) => {
   };
 
   const handleStatusChange = (id, value) => {
+    // If the selected value is null (or not set), directly update the status without confirmation
+    if (value === null) {
+      setStatuses(prev => ({
+        ...prev,
+        [id]: value
+      }));
+      return;
+    }
+  
+    if (lockedStatuses[id]) {
+      Alert.alert('Status Locked', 'This status cannot be changed anymore.');
+      return;
+    }
+  
     const name = customers.find(c => c._id === id)?.name;
     if (name) {
-      updateDeliveryStatus(name, value);
+      Alert.alert(
+        'Confirm Status Change',
+        `Are you sure you want to update the delivery status to "${value}"?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Yes',
+            onPress: async () => {
+              await updateDeliveryStatus(name, value);
+              setStatuses(prev => ({
+                ...prev,
+                [id]: value
+              }));
+              setLockedStatuses(prev => ({
+                ...prev,
+                [id]: true // Lock the status after confirming
+              }));
+            },
+          },
+        ]
+      );
     }
-    setStatuses(prev => ({ ...prev, [id]: value }));
   };
 
   const navigateToProductDetails = (orderCode, metafieldOrderType) => {
@@ -106,6 +153,14 @@ const RTOScreen = ({ route }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'Reverse Pickup Successful':
+        return '#d4edda'; // Green
+      case 'Reverse Pickup Failed':
+        return '#f8d7da'; // Red
+      case 'Replacement Pickup Successful':
+        return '#d4edda'; // Green
+      case 'Replacement Pickup Failed':
+        return '#f8d7da'; // Red
       case 'Delivered':
         return '#d4edda'; // Green
       case 'Delivery failed':
@@ -135,64 +190,73 @@ const RTOScreen = ({ route }) => {
     }
   };
 
+  const handleDragEnd = ({ data }) => {
+    setCustomers(data);
+  };
+
   return (
     <View style={styles.container}>
-      <FlatList
+      <DraggableFlatList
         data={customers}
         keyExtractor={keyExtractor}
-        renderItem={({ item }) => (
+        onDragEnd={handleDragEnd}
+        renderItem={({ item, drag, isActive }) => (
           <View style={[styles.itemContainer, { backgroundColor: getStatusColor(statuses[item._id]) }]}>
-            <View style={styles.infoContainer}>
-              <View style={styles.orderCodeContainer}>
-                <Text style={styles.orderCode}>{item.order_code}</Text>
-                <Text style={styles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
-              </View>
-              <Text style={styles.customerName}>{item.name}</Text>
-              <Text style={styles.address}>{item.address}</Text>
-              <View style={styles.pickerContainer}>
-                <RNPickerSelect
-                  placeholder={{ label: 'Select Status', value: null }}
-                  items={getStatusOptions(item.metafield_order_status)}
-                  onValueChange={(value) => handleStatusChange(item._id, value)}
-                  style={pickerSelectStyles}
-                  value={statuses[item._id]}
-                />
-              </View>
-              {statuses[item._id] === 'Delivered' && (
-                <View style={styles.textInputContainer}>
-                  <Text style={styles.textLabel}>Items Delivered:</Text>
-                  <View style={styles.counterContainer}>
-                    <TouchableOpacity
-                      style={styles.counterButton}
-                      onPress={() => handleDecrement(item._id)}
-                    >
-                      <Text style={styles.counterButtonText}>-</Text>
-                    </TouchableOpacity>
-                    <TextInput
-                      style={styles.textInput}
-                      keyboardType="numeric"
-                      value={userInputs[item._id]}
-                      onChangeText={(text) => handleInputChange(item._id, text)}
-                    />
-                    <TouchableOpacity
-                      style={styles.counterButton}
-                      onPress={() => handleIncrement(item._id)}
-                    >
-                      <Text style={styles.counterButtonText}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.counterValue}>
-                    {`/${customers.find(c => c._id === item._id)?.items || 0}`}
-                  </Text>
+            <TouchableOpacity onLongPress={drag}
+      delayLongPress={150} disabled={isActive}>
+              <View style={styles.infoContainer}>
+                <View style={styles.orderCodeContainer}>
+                  <Text style={styles.orderCode}>{item.order_code}</Text>
+                  <Text style={styles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
                 </View>
-              )}
-              <TouchableOpacity
-                style={styles.detailsButton}
-                onPress={() => navigateToProductDetails(item.order_code, item.metafield_order_status)}
-              >
-                <Text style={styles.detailsButtonText}>View Products</Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.customerName}>{item.name}</Text>
+                <Text style={styles.address}>{item.address}</Text>
+                <View style={styles.pickerContainer}>
+                  <RNPickerSelect
+                    placeholder={{ label: 'Select Status', value: null }}
+                    items={getStatusOptions(item.metafield_order_status)}
+                    onValueChange={(value) => handleStatusChange(item._id, value)}
+                    style={pickerSelectStyles}
+                    value={statuses[item._id]}
+                    disabled={lockedStatuses[item._id]} // Disable picker if status is locked
+                  />
+                </View>
+                {statuses[item._id] === 'Delivered' && (
+                  <View style={styles.textInputContainer}>
+                    <Text style={styles.textLabel}>Items Delivered:</Text>
+                    <View style={styles.counterContainer}>
+                      <TouchableOpacity
+                        style={styles.counterButton}
+                        onPress={() => handleDecrement(item._id)}
+                      >
+                        <Text style={styles.counterButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={styles.textInput}
+                        keyboardType="numeric"
+                        value={userInputs[item._id]}
+                        onChangeText={(text) => handleInputChange(item._id, text)}
+                      />
+                      <TouchableOpacity
+                        style={styles.counterButton}
+                        onPress={() => handleIncrement(item._id)}
+                      >
+                        <Text style={styles.counterButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.counterValue}>
+                      {`/${customers.find(c => c._id === item._id)?.items || 0}`}
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.detailsButton}
+                  onPress={() => navigateToProductDetails(item.order_code, item.metafield_order_status)}
+                >
+                  <Text style={styles.detailsButtonText}>View Products</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
             <View style={styles.iconContainer}>
               <TouchableOpacity onPress={() => openMap(item.address)} style={styles.iconButton}>
                 <MaterialCommunityIcons name="map-marker-outline" size={30} color="#287238" />
@@ -207,6 +271,7 @@ const RTOScreen = ({ route }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

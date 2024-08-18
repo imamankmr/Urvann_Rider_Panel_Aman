@@ -14,7 +14,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
-        const response = await axios.get(`http://10.5.16.226:5001/rtoscreen/product-details`, {
+        const response = await axios.get(`http://10.5.16.225:5001/rtoscreen/product-details`, {
           params: {
             order_code: order_code,
             metafield_order_type: metafield_order_type,

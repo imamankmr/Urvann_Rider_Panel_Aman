@@ -467,61 +467,58 @@ app.get('/api/customers/:driverName', async (req, res) => {
   try {
     const { driverName } = req.params;
 
-    // Define the filter conditions for Delivery_Status
     const filterConditions = [
-      { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
+      { 'metafield_order_type': { $exists: false } },
       { 'metafield_order_type': 'Replacement' }
     ];
 
+    // Include 'metafield_delivery_status' in the projection
     const routes = await Route.find({ 
       'Driver Name': driverName,
       $or: filterConditions
-    });
+    }, 'shipping_address_full_name FINAL Items total_item_quantity shipping_address_address shipping_address_phone metafield_delivery_status');
 
     if (routes.length === 0) {
       return res.status(404).json({ message: 'No customers found for this driver' });
     }
 
-    // Create a map to aggregate item quantities by customer
     const customerMap = new Map();
 
     routes.forEach(route => {
       if (!customerMap.has(route.shipping_address_full_name)) {
         customerMap.set(route.shipping_address_full_name, {
-          _id: route._id, // Include _id
+          _id: route._id,
           order_code: route.FINAL,
           items: route.Items,
           address: route.shipping_address_address,
-          total_quantity: route.total_item_quantity, // Initialize with current quantity
+          total_quantity: route.total_item_quantity,
           phone: route.shipping_address_phone,
+          metafield_delivery_status: route.metafield_delivery_status // Add this line
         });
       } else {
-        // Aggregate quantity for the existing customer
         const existing = customerMap.get(route.shipping_address_full_name);
         existing.total_quantity += route.total_item_quantity;
         customerMap.set(route.shipping_address_full_name, existing);
       }
     });
 
-    // Convert map to array of objects
-    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone }]) => ({
+    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_delivery_status }]) => ({
       _id,
-      name,         // This will be the name of the customer
+      name,
       order_code,
       items,
       address,
       total_quantity,
       phone,
+      metafield_delivery_status // Add this line
     }));
 
-    res.json({ customers }); // Return the customers with aggregated quantity
+    res.json({ customers });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-
 
 app.get('/api/rtoscreen/:driverName', async (req, res) => {
   try {
@@ -557,12 +554,13 @@ app.get('/api/rtoscreen/:driverName', async (req, res) => {
           total_quantity: route.total_item_quantity, // Corrected field name
           phone: route.shipping_address_phone,
           metafield_order_status: route.metafield_order_type, // Include metafield_order_status
+          metafield_delivery_status: route.metafield_delivery_status // Add this line
         });
       }
     });
 
     // Convert map to array of objects
-    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_order_status }]) => ({
+    const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_order_status, metafield_delivery_status }]) => ({
       _id,
       name,         // This will be the name of the customer
       order_code,
@@ -571,6 +569,7 @@ app.get('/api/rtoscreen/:driverName', async (req, res) => {
       total_quantity,
       phone,
       metafield_order_status, // Include in the final customer object
+      metafield_delivery_status
     }));
 
     res.json({ customers });
@@ -657,22 +656,31 @@ app.put('/api/update-delivery-status/:customerName', async (req, res) => {
   const { customerName } = req.params;
   const { deliveryStatus } = req.body;
 
+  console.log('Received customerName:', customerName);
+  console.log('Received deliveryStatus:', deliveryStatus);
+
   try {
     const result = await Route.updateMany(
       {
-        metafield_delivery_status: { $in: ['', 'Replacement', null] }
+        metafield_order_type: { $in: ['', 'Replacement', null] },
+        shipping_address_full_name: customerName
       },
-      { shipping_address_full_name: customerName },
-      { $set: { metafield_delivery_status: deliveryStatus } }
+      {
+        $set: { metafield_delivery_status: deliveryStatus }
+      }
     );
 
+    console.log('Update result:', result);
+
     if (result.matchedCount === 0) {
-      return res.status(404).send('No records found to update');
+      // Log more information if no records were matched
+      console.log('No matching records found for:', customerName);
+      return res.status(200).send('No records matched, but update was attempted');
     }
 
     res.status(200).send('Delivery status updated successfully');
   } catch (error) {
-    console.error(error);
+    console.error('Error:', error);
     res.status(500).send('Server error');
   }
 });
@@ -685,7 +693,7 @@ app.put('/api/update-rto-status/:customerName', async (req, res) => {
     const result = await Route.updateMany(
       {
         shipping_address_full_name: customerName,
-        metafield_delivery_status: { $in: ['Reverse Pickup', 'Replacement'] }
+        metafield_order_type: { $in: ['Reverse Pickup', 'Replacement'] }
       },
       { $set: { metafield_delivery_status: deliveryStatus } }
     );

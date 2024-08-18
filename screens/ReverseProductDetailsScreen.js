@@ -36,7 +36,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://10.5.16.226:5001${endpoint}`, {
+        const response = await axios.get(`http://10.5.16.225:5001${endpoint}`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -85,7 +85,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post('http://10.5.16.226:5001/api/update-delivery-status-bulk', {
+      await axios.post('http://10.5.16.225:5001/api/update-delivery-status-bulk', {
         sellerName,
         driverName,
         finalCode,
@@ -125,7 +125,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Delivery Status"];
-      await axios.post('http://10.5.16.226:5001/api/update-delivery-status', {
+      await axios.post('http://10.5.16.225:5001/api/update-delivery-status', {
         sku,
         orderCode,
         status: newStatus
@@ -224,97 +224,122 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 20,
   },
-  wrapper: {},
   scrollViewContainer: {
-    paddingVertical: 10,
+    paddingBottom: 20,
+    // paddingTop: 10,
+    backgroundColor: '#fff',
   },
   orderContainer: {
-    paddingHorizontal: 10,
+    backgroundColor: '#ffffff',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 10,
+    width: '90%',
+    alignSelf: 'center',
+    marginBottom: 20,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  selectAllContainer: {
     marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    width: '90%',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  selectAllText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   header: {
     fontSize: 20,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   subHeader: {
-    fontSize: 16,
-    color: '#666',
-  },
-  selectAllContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: '#007bff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 5,
-    marginVertical: 5,
-    marginHorizontal: 10,
-  },
-  selectAllText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 20,
+    color: '#555',
+    textAlign: 'center',
   },
   productContainer: {
     flexDirection: 'row',
-    padding: 10,
-    marginHorizontal: 10,
-    marginBottom: 10,
-    borderRadius: 5,
+    marginBottom: 15,
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderRadius: 10,
+    width: '90%',
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  delivered: {
-    backgroundColor: '#d4edda',
-  },
-  notDelivered: {
-    backgroundColor: '#f8d7da',
+ 
+  image: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
+    marginRight: 15,
+    borderRadius: 10,
   },
   textContainer: {
     flex: 1,
-    paddingLeft: 10,
     justifyContent: 'center',
   },
   text: {
-    fontSize: 14,
-    marginBottom: 5,
+    fontSize: 16,
+    marginBottom: 1,
   },
   statusText: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginTop: 5,
   },
-  deliveredStatus: {
-    color: '#155724',
+  pickedStatus: {
+    color: '#28a745',
   },
-  notDeliveredStatus: {
-    color: '#721c24',
-  },
-  image: {
-    width: 80,
-    height: 80,
+  notPickedStatus: {
+    color: '#dc3545',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
   },
   modalContent: {
-    width: '80%',
     backgroundColor: '#fff',
-    borderRadius: 10,
     padding: 20,
+    borderRadius: 10,
     alignItems: 'center',
+    margin: 20,
   },
   fullScreenImage: {
-    width: '100%',
-    height: 200,
-    marginBottom: 20,
+    width: 300,
+    height: 300,
     borderRadius: 10,
+    marginBottom: 20,
   },
   modalText: {
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 10,
+  },
+
+  picked: {
+    backgroundColor: '#d4edda',
+  },
+  notPicked: {
+    backgroundColor: '#f9f9f9',
   },
 });
 

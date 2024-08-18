@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 
 const DeliveryScreen = ({ route }) => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userInputs, setUserInputs] = useState({});
   const [statuses, setStatuses] = useState({});
+  const [lockedStatuses, setLockedStatuses] = useState({}); // Add state to track locked statuses
   const driverName = route.params.driverName;
 
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`http://10.5.16.226:5001/api/customers/${driverName}`);
+        const response = await axios.get(`http://10.5.16.225:5001/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
-        // Initialize user inputs and statuses with default values
+        // Initialize user inputs, statuses, and locked statuses with fetched data
         const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
           if (customer._id) {
             acc[customer._id] = '0';
@@ -27,16 +29,25 @@ const DeliveryScreen = ({ route }) => {
 
         const initialStatuses = fetchedCustomers.reduce((acc, customer) => {
           if (customer._id) {
-            acc[customer._id] = '';
+            acc[customer._id] = customer.metafield_delivery_status || ''; // Fetch the status
+          }
+          return acc;
+        }, {});
+
+        const initialLockedStatuses = fetchedCustomers.reduce((acc, customer) => {
+          if (customer._id && customer.metafield_delivery_status) {
+            acc[customer._id] = true; // Lock statuses that are already set
           }
           return acc;
         }, {});
 
         setUserInputs(initialUserInputs);
         setStatuses(initialStatuses);
+        setLockedStatuses(initialLockedStatuses);
         setCustomers(fetchedCustomers);
-        setLoading(false);
       } catch (error) {
+        console.error('Error fetching customers:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -64,7 +75,7 @@ const DeliveryScreen = ({ route }) => {
 
   const handleInputChange = (id, text) => {
     const value = text.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-    const maxValue = customers.find(c => c._id === id).items;
+    const maxValue = customers.find(c => c._id === id)?.items || 0;
     if (value === '' || (parseInt(value, 10) <= maxValue && parseInt(value, 10) >= 0)) {
       setUserInputs(prev => ({
         ...prev,
@@ -76,7 +87,7 @@ const DeliveryScreen = ({ route }) => {
   const handleIncrement = (id) => {
     setUserInputs(prev => {
       const currentValue = parseInt(prev[id], 10);
-      const maxValue = customers.find(c => c._id === id).items;
+      const maxValue = customers.find(c => c._id === id)?.items || 0;
       return {
         ...prev,
         [id]: Math.min(currentValue + 1, maxValue).toString()
@@ -96,29 +107,71 @@ const DeliveryScreen = ({ route }) => {
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
-      const response = await axios.put(`http://10.5.16.226:5001/api/update-delivery-status/${name}`, {
+      const response = await axios.put(`http://10.5.16.225:5001/api/update-delivery-status/${name}`, {
         deliveryStatus
       });
+  
       if (response.status === 200) {
-        alert('Delivery status updated successfully');
+        Alert.alert('Success', 'Delivery status updated successfully');
+      } else if (response.status === 400) {
+        Alert.alert('Error', 'Cannot change delivery status; status already set.');
+      } else {
+        console.error('Unexpected Response Status:', response.status);
+        Alert.alert('Error', 'Failed to update delivery status: Unexpected response status');
       }
     } catch (error) {
-      alert('Failed to update delivery status');
+      console.error('Error updating delivery status:', error);
+      Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
     }
-  };
+  };   
 
   const handleStatusChange = (id, value) => {
+    // If the selected value is null (or not set), directly update the status without confirmation
+    if (value === null) {
+      setStatuses(prev => ({
+        ...prev,
+        [id]: value
+      }));
+      return;
+    }
+  
+    if (lockedStatuses[id]) {
+      Alert.alert('Status Locked', 'This status cannot be changed anymore.');
+      return;
+    }
+  
     const name = customers.find(c => c._id === id)?.name;
     if (name) {
-      updateDeliveryStatus(name, value); // Call the API to update status
+      Alert.alert(
+        'Confirm Status Change',
+        `Are you sure you want to update the delivery status to "${value}"?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Yes',
+            onPress: async () => {
+              await updateDeliveryStatus(name, value);
+              setStatuses(prev => ({
+                ...prev,
+                [id]: value
+              }));
+              setLockedStatuses(prev => ({
+                ...prev,
+                [id]: true // Lock the status after confirming
+              }));
+            },
+          },
+        ]
+      );
     }
-    setStatuses(prev => ({
-      ...prev,
-      [id]: value
-    }));
   };
 
-  const keyExtractor = (item) => item._id ? item._id.toString() : `key-${Math.random()}`;
+  const handleDragEnd = ({ data }) => {
+    setCustomers(data);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -138,10 +191,10 @@ const DeliveryScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <DraggableFlatList
         data={customers}
-        keyExtractor={keyExtractor}
-        renderItem={({ item }) => (
+        keyExtractor={item => item._id ? item._id.toString() : `key-${Math.random()}`}
+        renderItem={({ item, drag }) => (
           <View style={[styles.itemContainer, { backgroundColor: getStatusColor(statuses[item._id]) }]}>
             <View style={styles.infoContainer}>
               <Text style={[styles.orderCode, { color: 'green' }]}>{item.order_code}</Text>
@@ -154,6 +207,7 @@ const DeliveryScreen = ({ route }) => {
                   onValueChange={(value) => handleStatusChange(item._id, value)}
                   style={pickerSelectStyles}
                   value={statuses[item._id]}
+                  disabled={lockedStatuses[item._id]} // Disable picker if status is locked
                 />
               </View>
               {statuses[item._id] === 'Delivered' && (
@@ -191,8 +245,12 @@ const DeliveryScreen = ({ route }) => {
                 <FontAwesome name="phone" size={30} color="#287238" />
               </TouchableOpacity>
             </View>
+            <TouchableOpacity style={styles.dragHandle} onLongPress={drag}>
+              <MaterialCommunityIcons name="drag" size={24} color="#888" />
+            </TouchableOpacity>
           </View>
         )}
+        onDragEnd={handleDragEnd}
       />
     </View>
   );
