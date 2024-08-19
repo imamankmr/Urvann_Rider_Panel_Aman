@@ -37,7 +37,7 @@ const PickupTabNavigator = ({ route }) => {
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ 
           title: 'Pickup',
-          tabBarLabel: 'Pickup', // Set text label
+          //tabBarLabel: 'Pickup', // Set text label
         }} 
       />
       <Tab.Screen 
@@ -45,8 +45,8 @@ const PickupTabNavigator = ({ route }) => {
         component={ReversePickupScreen} 
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ 
-          title: 'Reverse Pickup',
-          tabBarLabel: 'Reverse Pickup', // Set text label
+          title: 'Returns',
+          //tabBarLabel: 'Returns', // Set text label
         }} 
       />
     </Tab.Navigator>

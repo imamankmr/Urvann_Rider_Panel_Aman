@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
@@ -29,6 +30,7 @@ const DeliveryScreen = ({ route }) => {
         const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
+        // Initialize user inputs, statuses, and locked statuses with fetched data
         // Initialize user inputs, statuses, and locked statuses with fetched data
         const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
           if (customer._id) {
@@ -212,13 +214,20 @@ const DeliveryScreen = ({ route }) => {
       const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${name}`, {
         deliveryStatus
       });
+  
       if (response.status === 200) {
-        alert('Delivery status updated successfully');
+        Alert.alert('Success', 'Delivery status updated successfully');
+      } else if (response.status === 400) {
+        Alert.alert('Error', 'Cannot change delivery status; status already set.');
+      } else {
+        console.error('Unexpected Response Status:', response.status);
+        Alert.alert('Error', 'Failed to update delivery status: Unexpected response status');
       }
     } catch (error) {
-      alert('Failed to update delivery status');
+      console.error('Error updating delivery status:', error);
+      Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
     }
-  };
+  };   
 
   const handleDeliveryStatusChange = (id, value) => {
     // If the selected value is null (or not set), directly update the status without confirmation
