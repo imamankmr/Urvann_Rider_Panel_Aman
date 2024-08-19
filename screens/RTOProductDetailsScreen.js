@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const ProductDetailsScreen = ({ route }) => {
   const [product, setProduct] = useState(null);
@@ -14,7 +15,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
-        const response = await axios.get(`http://10.5.16.226:5001/rtoscreen/product-details`, {
+        const response = await axios.get(`${BACKEND_URL}/rtoscreen/product-details`, {
           params: {
             order_code: order_code,
             metafield_order_type: metafield_order_type,

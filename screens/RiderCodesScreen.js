@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const RiderCodesScreen = ({ route }) => {
   const [sellers, setSellers] = useState([]);
@@ -11,7 +12,7 @@ const RiderCodesScreen = ({ route }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/driver/${driverName}/sellers/${endpoint}`);
+        const response = await axios.get(`${BACKEND_URL}/api/driver/${driverName}/sellers/${endpoint}`);
         setSellers(response.data);
       } catch (error) {
         console.error(`Error fetching seller names for ${driverName}:`, error);

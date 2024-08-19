@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -53,7 +54,7 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`https://urvann-rider-panel.onrender.com/api/login`, { username, password });
+      const response = await axios.post(`${BACKEND_URL}/api/login`, { username, password });
       if (response.status === 200 && response.data.token) {
         Alert.alert('Login successful', `Welcome, ${username}!`);
 

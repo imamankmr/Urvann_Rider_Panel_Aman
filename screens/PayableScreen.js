@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const PayableScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -11,7 +12,7 @@ const PayableScreen = ({ route }) => {
   useEffect(() => {
     const fetchPayables = async () => {
       try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/payable/${driverName}`);
+        const response = await axios.get(`${BACKEND_URL}/api/payable/${driverName}`);
         setPayables(response.data);
         setLoading(false);
       } catch (error) {

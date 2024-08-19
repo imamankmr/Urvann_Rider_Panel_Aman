@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, To
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const ProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName, endpoint } = route.params;
@@ -36,7 +37,7 @@ const ProductDetailsScreen = ({ route }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`http://10.5.16.226:5001${endpoint}`, {
+        const response = await axios.get(`${BACKEND_URL}${endpoint}`, {
           params: {
             seller_name: sellerName,
             rider_code: driverName
@@ -85,7 +86,7 @@ const ProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post('http://10.5.16.226:5001/api/update-pickup-status-bulk', {
+      await axios.post(`${BACKEND_URL}/api/update-pickup-status-bulk`, {
         sellerName,
         driverName,
         finalCode,
@@ -125,7 +126,7 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post('http://10.5.16.226:5001/api/update-pickup-status', {
+      await axios.post(`${BACKEND_URL}/api/update-pickup-status`, {
         sku,
         orderCode,
         status: newStatus

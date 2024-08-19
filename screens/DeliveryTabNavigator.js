@@ -2,7 +2,7 @@ import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import DeliveryScreen from './DeliveryScreen';
 import PickupTabNavigator from './PickupTabNavigator';
-import RTOStackNavigator from './RTOStackNavigator'; // Import the new stack navigator
+// import RTOStackNavigator from './RTOStackNavigator'; // Import the new stack navigator
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -44,12 +44,12 @@ const DeliveryTabNavigator = ({ route }) => {
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ tabBarLabel: 'Delivery' }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="RTOStack"
         component={RTOStackNavigator}
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ tabBarLabel: 'RTO' }}
-      />
+      /> */}
     </Tab.Navigator>
   );
 };

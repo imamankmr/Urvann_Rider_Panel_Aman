@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const ReversePickupScreen = ({ route }) => {
   const [sellers, setSellers] = useState([]);
@@ -9,7 +10,7 @@ const ReversePickupScreen = ({ route }) => {
   const { driverName } = route.params; // Extract driverName from route params
 
   useEffect(() => {
-    axios.get(`http://10.5.16.226:5001/api/driver/${driverName}/reverse-pickup-sellers`)
+    axios.get(`${BACKEND_URL}/api/driver/${driverName}/reverse-pickup-sellers`)
       .then(response => {
         setSellers(response.data);
       })

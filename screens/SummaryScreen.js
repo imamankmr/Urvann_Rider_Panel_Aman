@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import axios from 'axios';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const SummaryScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -11,7 +12,7 @@ const SummaryScreen = ({ route }) => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/summary/${driverName}`);
+        const response = await axios.get(`${BACKEND_URL}/api/summary/${driverName}`);
         setSummary(response.data);
         setLoading(false);
       } catch (error) {

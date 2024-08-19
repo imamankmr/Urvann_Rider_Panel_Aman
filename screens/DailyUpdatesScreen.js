@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const DeliveryUpdatesScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -11,7 +12,7 @@ const DeliveryUpdatesScreen = ({ route }) => {
   useEffect(() => {
     const fetchDeliveryUpdates = async () => {
       try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/data/${driverName}`);
+        const response = await axios.get(`${BACKEND_URL}/api/data/${driverName}`);
         setDeliveryUpdates(response.data.deliveryUpdates);
         setLoading(false);
       } catch (error) {

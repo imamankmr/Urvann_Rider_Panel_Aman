@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const RefundScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -11,7 +12,7 @@ const RefundScreen = ({ route }) => {
   useEffect(() => {
     const fetchRefunds = async () => {
       try {
-        const response = await axios.get(`https://urvann-rider-panel.onrender.com/api/refund/${driverName}`);
+        const response = await axios.get(`${BACKEND_URL}/api/refund/${driverName}`);
         setRefunds(response.data);
         setLoading(false);
       } catch (error) {

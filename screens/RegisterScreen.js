@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, View, TouchableOpacity, Alert, Image, Keyb
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import { BACKEND_URL } from 'react-native-dotenv';
 
 const RegisterScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -15,7 +16,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     try {
-      const response = await axios.post(`https://urvann-rider-panel.onrender.com/api/register`, { username, password });
+      const response = await axios.post(`${BACKEND_URL}/api/register`, { username, password });
       if (response.status === 201) {
         Alert.alert(`Registration successful ${username}, You can now login.`);
         navigation.navigate('Login');
