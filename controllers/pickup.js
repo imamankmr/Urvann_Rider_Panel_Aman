@@ -30,45 +30,64 @@ const Photo = require('../models/photo');
 const pickupSellers = async (req, res) => {
     const { driverName } = req.params;
     console.log(`Fetching pickup sellers for driver: ${driverName}`);
-
+  
     try {
-        const sellers = await Route.find({
-            'Driver Name': driverName,
+      // Find the lock status for the given driver
+      const driverData = await Route.findOne({ 'Driver Name': driverName }, 'Lock_Status');
+      const lockStatus = driverData ? driverData.Lock_Status : 'open'; // Default to 'open' if not found
+  
+      const sellers = await Route.find({
+        'Driver Name': driverName,
+        $or: [
+          { metafield_order_type: { $in: ['Replacement'] } },
+          { metafield_order_type: { $eq: null } },
+          { metafield_order_type: { $eq: '' } }     // Add condition for empty string
+        ]
+      }).distinct('seller_name');
+  
+      const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
+        const productCount = await Route.aggregate([
+          { $match: { 
+            'Driver Name': driverName, 
+            seller_name: sellerName, 
             $or: [
-                { metafield_order_type: { $in: ['Replacement'] } },
-                { metafield_order_type: { $eq: null } },  // Add condition for null
-                { metafield_order_type: { $eq: '' } }     // Add condition for empty string
+              { metafield_order_type: { $in: ['Replacement'] } },
+              { metafield_order_type: { $eq: null } },
+              { metafield_order_type: { $eq: '' } }
             ]
-        }).distinct('seller_name');
-
-        const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
-            const productCount = await Route.aggregate([
-                {
-                    $match: {
-                        'Driver Name': driverName,
-                        seller_name: sellerName,
-                        $or: [
-                            { metafield_order_type: { $in: ['Replacement'] } },
-                            { metafield_order_type: { $eq: null } },
-                            { metafield_order_type: { $eq: '' } }
-                        ]
-                    }
-                },
-                { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
-            ]);
-            return {
-                sellerName,
-                productCount: productCount[0] ? productCount[0].totalQuantity : 0
-            };
-        }));
-
-        console.log('Pickup sellers with counts:', sellersWithCounts);
-        res.json(sellersWithCounts);
+          } },
+          { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
+        ]);
+        return {
+          sellerName,
+          productCount: productCount[0] ? productCount[0].totalQuantity : 0
+        };
+      }));
+  
+      console.log('Pickup sellers with counts:', sellersWithCounts);
+      res.json({ sellers: sellersWithCounts, lockStatus });
     } catch (error) {
-        console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
-        res.status(500).json({ message: 'Internal server error' });
+      console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
+      res.status(500).json({ message: 'Internal server error' });
     }
 }
+
+const pickupLockScreen = async (req, res) => {
+    const { driverName } = req.params;
+    console.log(`Locking pickup screen for driver: ${driverName}`);
+  
+    try {
+      await Route.updateMany(
+        { 'Driver Name': driverName },
+        { $set: { Lock_Status: 'close' } }
+      );
+      res.json({ message: 'Pickup screen locked successfully' });
+    } catch (error) {
+      console.error(`Error locking pickup screen for ${driverName}:`, error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 
 const reversePickupSellers = async (req, res) => {
     const { driverName } = req.params;
@@ -291,6 +310,7 @@ module.exports = {
     // sellers,
     pickupSellers,
     reversePickupSellers,
+    pickupLockScreen,
     // products,
     pickupProducts,
     reversePickupProducts,

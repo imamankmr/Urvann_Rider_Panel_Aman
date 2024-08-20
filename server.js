@@ -27,6 +27,7 @@ app.post('/api/login', user.loginUser);
 // GET /api/driver/:driverName/sellers
 // app.get('/api/driver/:driverName/sellers', pickup.sellers);
 app.get('/api/driver/:driverName/pickup-sellers', pickup.pickupSellers);
+app.post('/api/driver/:driverName/lock-pickup', pickup.pickupLockScreen);
 app.get('/api/driver/:driverName/reverse-pickup-sellers', pickup.reversePickupSellers);
 
 // GET /api/products

@@ -8,6 +8,8 @@ import RegisterScreen from './screens/RegisterScreen';
 import RiderCodesScreen from './screens/RiderCodesScreen';
 import DeliveryTabNavigator from './screens/DeliveryTabNavigator';
 import ReverseProductDetailsScreen from './screens/ReverseProductDetailsScreen';
+import RTOProductDetailsScreen from './screens/RTOProductDetailsScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -31,6 +33,7 @@ const App = () => {
         <Stack.Screen name="DeliveryTabs" component={DeliveryTabNavigator} options={{ headerShown: false }}/>
         <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ title: 'Product Details' }} />
         <Stack.Screen name="ReverseProductDetails" component={ReverseProductDetailsScreen} options={{ title: 'Product Details' }} />
+        <Stack.Screen name="RTOProductDetailsScreen" component={RTOProductDetailsScreen} options={{ title: 'RTO Products' }} />
         <Stack.Screen name="SellerName" component={RiderCodesScreen} options={{ title: 'Seller Name' }} />
       </Stack.Navigator>
     </NavigationContainer>

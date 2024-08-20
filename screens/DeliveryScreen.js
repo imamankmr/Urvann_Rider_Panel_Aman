@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert } from 'react-native';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
@@ -30,7 +29,6 @@ const DeliveryScreen = ({ route }) => {
         const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
         const fetchedCustomers = response.data.customers;
 
-        // Initialize user inputs, statuses, and locked statuses with fetched data
         // Initialize user inputs, statuses, and locked statuses with fetched data
         const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
           if (customer._id) {
