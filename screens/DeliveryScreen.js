@@ -534,45 +534,49 @@ const DeliveryScreen = ({ route }) => {
   );
 };
 
-const sharedStyles = {
+const commonItemContainer = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: 16,
+  borderRadius: 10,
+  marginBottom: 10,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  backgroundColor: '#fff', // Default background color, can be overridden
+};
+
+const deliveryStyles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
     backgroundColor: '#f9f9f9',
   },
   itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    backgroundColor: '#fff',
+    ...commonItemContainer,
   },
   infoContainer: {
     flex: 1,
-    paddingRight: 10, // Ensure spacing between info and icons
-  },
-  customerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333',
+    paddingRight: 10,
   },
   orderCode: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#28a745', // Consistent green color for order code
     marginBottom: 4,
-    color: '#28a745',
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
   },
   address: {
     fontSize: 16,
-    marginBottom: 4,
     color: '#666',
+    marginBottom: 4,
   },
   textInputContainer: {
     flexDirection: 'row',
@@ -618,43 +622,109 @@ const sharedStyles = {
   },
   iconContainer: {
     alignItems: 'center',
-    justifyContent: 'flex-end', // Ensure icons are at the end (right side)
-    flexShrink: 0, // Prevents the container from shrinking
+    justifyContent: 'flex-end',
+    flexShrink: 0,
   },
   iconButton: {
     marginHorizontal: 8,
     marginBottom: 10,
   },
-};
-
-const deliveryStyles = StyleSheet.create({
-  ...sharedStyles,
-  itemContainer: {
-    ...sharedStyles.itemContainer,
-    backgroundColor: '#f9f9f9',
-  },
 });
 
 const rtoStyles = StyleSheet.create({
-  ...sharedStyles,
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+  },
   itemContainer: {
-    ...sharedStyles.itemContainer,
-    backgroundColor: '#f8f8f8',
+    ...commonItemContainer,
+  },
+  infoContainer: {
+    flex: 1,
+    paddingRight: 10,
   },
   orderCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 1,
+    marginBottom: 4,
+  },
+  orderCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#28a745', // Consistent green color for order code
+    marginRight: 8,
   },
   metafieldOrderStatus: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#28a745', // Consistent green color for metafield status
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  address: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 4,
+  },
+  textInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  textLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  counterButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+  },
+  counterButtonText: {
+    fontSize: 20,
+    color: '#333',
+  },
+  textInput: {
+    width: 50,
+    height: 30,
+    textAlign: 'center',
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginHorizontal: 8,
+  },
+  counterValue: {
+    fontSize: 16,
+    color: '#333',
+  },
+  pickerContainer: {
+    marginTop: 10,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+  },
+  iconButton: {
+    marginHorizontal: 8,
+    marginBottom: 10,
   },
   detailsButton: {
     marginTop: 10,
     padding: 10,
-    width: 240,
     backgroundColor: '#287238',
     borderRadius: 5,
     alignItems: 'center',
@@ -668,10 +738,11 @@ const rtoStyles = StyleSheet.create({
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
     fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#f9f9f9',
+    borderColor: '#ddd',
+    // backgroundColor: '#D3D3D3',
     borderRadius: 4,
     color: '#333',
     paddingRight: 30,
