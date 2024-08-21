@@ -197,13 +197,19 @@ const DeliveryScreen = ({ route }) => {
         Alert.alert('Success', 'Delivery status updated successfully');
       } else if (response.status === 400) {
         Alert.alert('Error', 'Cannot change delivery status; status already set.');
+      } else if (response.status === 401) {
+        Alert.alert('Error', 'Cannot update delivery status while there are open locks');
       } else {
         console.error('Unexpected Response Status:', response.status);
         Alert.alert('Error', 'Failed to update delivery status: Unexpected response status');
       }
     } catch (error) {
       console.error('Error updating delivery status:', error);
-      Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
+      if (error.response.status === 401) {
+        Alert.alert('Error', 'Cannot update delivery status while there are open locks');
+      } else {
+        Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
+      }
     }
   };
 
@@ -212,20 +218,26 @@ const DeliveryScreen = ({ route }) => {
       const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${name}`, {
         deliveryStatus
       });
-  
+
       if (response.status === 200) {
-        Alert.alert('Success', 'Delivery status updated successfully');
+        Alert.alert('Success', 'RTO status updated successfully');
       } else if (response.status === 400) {
-        Alert.alert('Error', 'Cannot change delivery status; status already set.');
+        Alert.alert('Error', 'Cannot change RTO status; status already set.');
+      } else if (response.status === 401) {
+        Alert.alert('Error', 'Cannot update RTO status while there are open locks');
       } else {
         console.error('Unexpected Response Status:', response.status);
-        Alert.alert('Error', 'Failed to update delivery status: Unexpected response status');
+        Alert.alert('Error', 'Failed to update RTO status: Unexpected response status');
       }
     } catch (error) {
-      console.error('Error updating delivery status:', error);
-      Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
+      console.error('Error updating RTO status:', error);
+      if (error.response.status === 401) {
+        Alert.alert('Error', 'Cannot update RTO status while there are open locks');
+      } else {
+        Alert.alert('Error', 'Failed to update RTO status: Network or Server Error');
+      }
     }
-  };   
+  };
 
   const handleDeliveryStatusChange = (id, value) => {
     // If the selected value is null (or not set), directly update the status without confirmation
@@ -244,6 +256,13 @@ const DeliveryScreen = ({ route }) => {
 
     const name = deliveryCustomers.find(c => c._id === id)?.name;
     if (name) {
+      updateDeliveryStatus(name, value).then((res) => {
+        if (res.status === 401) {
+          Alert.alert('Error', 'Cannot update delivery status while there are open locks');
+          return;
+        }
+      });
+
       Alert.alert(
         'Confirm Status Change',
         `Are you sure you want to update the delivery status to "${value}"?`,
@@ -288,6 +307,13 @@ const DeliveryScreen = ({ route }) => {
 
     const name = rtoCustomers.find(c => c._id === id)?.name;
     if (name) {
+      updateRtoStatus(name, value).then((res) => {
+        if (res.status === 401) {
+          Alert.alert('Error', 'Cannot update RTO status while there are open locks');
+          return;
+        }
+      });
+
       Alert.alert(
         'Confirm Status Change',
         `Are you sure you want to update the delivery status to "${value}"?`,
@@ -432,7 +458,7 @@ const DeliveryScreen = ({ route }) => {
                 </TouchableOpacity>
               </View>
             )
-          // } else if (item.type === 'rto') {
+            // } else if (item.type === 'rto') {
           } else {
             return (
               <View style={[rtoStyles.itemContainer, { backgroundColor: getStatusColor(rtoStatuses[item._id]) }]}>

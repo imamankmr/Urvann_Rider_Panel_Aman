@@ -113,6 +113,14 @@ const updateRTOStatus = async (req, res) => {
     const { deliveryStatus } = req.body;
 
     try {
+        const lockedStatuses = await Route.find({ Lock_Status: "Open" });
+
+        console.log(lockedStatuses);
+
+        if (lockedStatuses.length > 0) {
+            return res.status(401).send('Cannot update delivery status while there are open locks');
+        }
+
         const result = await Route.updateMany(
             {
                 shipping_address_full_name: customerName,
