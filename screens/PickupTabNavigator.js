@@ -17,16 +17,13 @@ const PickupTabNavigator = ({ route }) => {
           borderTopWidth: 1,
           borderTopColor: '#e0e0e0',
           elevation: 5, // Adds shadow for Android
-          height: 50, // Set a specific height for the tab bar
+          height: 60, // Increase the height to provide more space
         },
         tabBarLabelStyle: {
-          fontSize: 16, // Slightly reduce the font size
-          fontWeight: '600', // Slightly reduce the font weight
-          marginBottom: -18, // Adjust the bottom margin to reduce spacing
+          fontSize: 14, // Reduce the font size slightly for better rendering on Android
+          fontWeight: '500', // Adjusted to medium weight
+          marginBottom: 8, // Adjust margin to ensure visibility
         },
-        // tabBarItemStyle: {
-        //   paddingVertical: 5, // Adjust vertical padding to fit within the reduced height
-        // },
         tabBarActiveTintColor: '#287238',
         tabBarInactiveTintColor: '#666',
       }}
