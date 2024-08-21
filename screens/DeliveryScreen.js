@@ -658,7 +658,7 @@ const rtoStyles = StyleSheet.create({
     color: '#28a745',
   },
   customerName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
     color: '#333',

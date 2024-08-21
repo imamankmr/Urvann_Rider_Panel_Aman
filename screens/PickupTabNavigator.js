@@ -17,16 +17,16 @@ const PickupTabNavigator = ({ route }) => {
           borderTopWidth: 1,
           borderTopColor: '#e0e0e0',
           elevation: 5, // Adds shadow for Android
-          shadowColor: '#000', // Shadow color for iOS
-          shadowOffset: { width: 0, height: -2 }, // Shadow position for iOS
-          shadowOpacity: 0.2, // Shadow opacity for iOS
-          shadowRadius: 3, // Shadow radius for iOS
+          height: 50, // Set a specific height for the tab bar
         },
         tabBarLabelStyle: {
-          fontSize: 16,
-          fontWeight: '800',
-          marginBottom: 10,
+          fontSize: 16, // Slightly reduce the font size
+          fontWeight: '600', // Slightly reduce the font weight
+          marginBottom: -18, // Adjust the bottom margin to reduce spacing
         },
+        // tabBarItemStyle: {
+        //   paddingVertical: 5, // Adjust vertical padding to fit within the reduced height
+        // },
         tabBarActiveTintColor: '#287238',
         tabBarInactiveTintColor: '#666',
       }}
@@ -37,7 +37,6 @@ const PickupTabNavigator = ({ route }) => {
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ 
           title: 'Pickup',
-          //tabBarLabel: 'Pickup', // Set text label
         }} 
       />
       <Tab.Screen 
@@ -46,7 +45,6 @@ const PickupTabNavigator = ({ route }) => {
         initialParams={{ driverName }} // Pass driverName as initialParams
         options={{ 
           title: 'Returns',
-          //tabBarLabel: 'Returns', // Set text label
         }} 
       />
     </Tab.Navigator>
