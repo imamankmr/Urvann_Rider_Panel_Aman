@@ -462,8 +462,7 @@ const DeliveryScreen = ({ route }) => {
           } else {
             return (
               <View style={[rtoStyles.itemContainer, { backgroundColor: getStatusColor(rtoStatuses[item._id]) }]}>
-                <TouchableOpacity onLongPress={drag}
-                  delayLongPress={150} disabled={isActive}>
+                <TouchableOpacity onLongPress={drag} delayLongPress={150} disabled={isActive}>
                   <View style={rtoStyles.infoContainer}>
                     <View style={rtoStyles.orderCodeContainer}>
                       <Text style={rtoStyles.orderCode}>{item.order_code}</Text>
@@ -526,7 +525,7 @@ const DeliveryScreen = ({ route }) => {
                   </TouchableOpacity>
                 </View>
               </View>
-            )
+            );
           }
         }}
         onDragEnd={handleDragEnd}
@@ -615,11 +614,15 @@ const deliveryStyles = StyleSheet.create({
     marginTop: 10,
   },
   iconContainer: {
-    flexDirection: 'row',
+    // flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end', // Ensure icons are at the end (right side)
+    flexShrink: 0, // Prevents the container from shrinking
   },
   iconButton: {
     marginHorizontal: 8,
+    marginBottom:10,
+    
   },
 });
 
@@ -636,10 +639,14 @@ const rtoStyles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     elevation: 2,
-    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   infoContainer: {
     flex: 1,
+    paddingRight: 10, // Ensure spacing between info and icons
   },
   orderCodeContainer: {
     flexDirection: 'row',
@@ -711,11 +718,15 @@ const rtoStyles = StyleSheet.create({
     marginTop: 10,
   },
   iconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    // flexDirection: 'row',
+    marginBottom:20,
+    alignItems: 'left',
+    justifyContent: 'flex-end', // Ensure icons are at the end (right side)
+    flexShrink: 0, // Prevents the container from shrinking
   },
   iconButton: {
     marginHorizontal: 8,
+    marginBottom:10,
   },
   detailsButton: {
     marginTop: 10,
