@@ -534,7 +534,7 @@ const DeliveryScreen = ({ route }) => {
   );
 };
 
-const deliveryStyles = StyleSheet.create({
+const sharedStyles = {
   container: {
     flex: 1,
     padding: 16,
@@ -551,9 +551,11 @@ const deliveryStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
+    backgroundColor: '#fff',
   },
   infoContainer: {
     flex: 1,
+    paddingRight: 10, // Ensure spacing between info and icons
   },
   customerName: {
     fontSize: 16,
@@ -563,8 +565,9 @@ const deliveryStyles = StyleSheet.create({
   },
   orderCode: {
     fontSize: 16,
-    fontWeight: 'bold', // Make orderCode bold
+    fontWeight: 'bold',
     marginBottom: 4,
+    color: '#28a745',
   },
   address: {
     fontSize: 16,
@@ -614,119 +617,39 @@ const deliveryStyles = StyleSheet.create({
     marginTop: 10,
   },
   iconContainer: {
-    // flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end', // Ensure icons are at the end (right side)
     flexShrink: 0, // Prevents the container from shrinking
   },
   iconButton: {
     marginHorizontal: 8,
-    marginBottom:10,
-    
+    marginBottom: 10,
+  },
+};
+
+const deliveryStyles = StyleSheet.create({
+  ...sharedStyles,
+  itemContainer: {
+    ...sharedStyles.itemContainer,
+    backgroundColor: '#f9f9f9',
   },
 });
 
 const rtoStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#f8f8f8',
-  },
+  ...sharedStyles,
   itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  infoContainer: {
-    flex: 1,
-    paddingRight: 10, // Ensure spacing between info and icons
+    ...sharedStyles.itemContainer,
+    backgroundColor: '#f8f8f8',
   },
   orderCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 1,
   },
-  orderCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#28a745',
-    marginRight: 8,
-  },
   metafieldOrderStatus: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#28a745',
-  },
-  customerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333',
-  },
-  address: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#666',
-  },
-  textInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  textLabel: {
-    fontSize: 16,
-    color: '#333',
-  },
-  counterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  counterButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#e0e0e0',
-    borderRadius: 5,
-  },
-  counterButtonText: {
-    fontSize: 20,
-    color: '#333',
-  },
-  textInput: {
-    width: 50,
-    height: 30,
-    textAlign: 'center',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginHorizontal: 8,
-  },
-  counterValue: {
-    fontSize: 16,
-    color: '#333',
-  },
-  pickerContainer: {
-    marginTop: 10,
-  },
-  iconContainer: {
-    // flexDirection: 'row',
-    marginBottom:20,
-    alignItems: 'left',
-    justifyContent: 'flex-end', // Ensure icons are at the end (right side)
-    flexShrink: 0, // Prevents the container from shrinking
-  },
-  iconButton: {
-    marginHorizontal: 8,
-    marginBottom:10,
   },
   detailsButton: {
     marginTop: 10,
