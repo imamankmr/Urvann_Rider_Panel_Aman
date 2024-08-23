@@ -9,7 +9,7 @@ const rtoData = async (req, res) => {
         const filterConditions = [
             { 'metafield_order_type': 'Replacement' },
             { 'metafield_order_type': 'Reverse Pickup' },
-            { 'metafield_order_type': 'Delivery Failed' },
+            //{ 'metafield_order_type': 'Delivery Failed' },
         ];
 
         // Fetch routes with the given driver name and filter conditions
@@ -22,41 +22,49 @@ const rtoData = async (req, res) => {
             return res.status(404).json({ message: 'No customers found for this driver' });
         }
 
-        // Create a map to ensure unique customers
+        // Create a map to aggregate products for each customer and order type
         const customerMap = new Map();
 
         routes.forEach(route => {
-            if (!customerMap.has(route.shipping_address_full_name)) {
-                customerMap.set(route.shipping_address_full_name, {
+            const key = `${route.shipping_address_full_name}-${route.metafield_order_type}`;
+
+            if (!customerMap.has(key)) {
+                customerMap.set(key, {
                     _id: route._id,
+                    name: route.shipping_address_full_name,
                     order_code: route.FINAL,
-                    items: route.Items,
+                    items: [],
                     address: route.shipping_address_address,
-                    total_quantity: route.total_item_quantity, // Corrected field name
+                    total_quantity: 0,
                     phone: route.shipping_address_phone,
-                    metafield_order_status: route.metafield_order_type, // Include metafield_order_status
+                    metafield_order_status: route.metafield_order_type,
                 });
             }
+
+            // Add the current route's items and other details to the existing customer entry
+            const customer = customerMap.get(key);
+            
+            // Check if Items is defined and is an array before iterating
+            if (Array.isArray(route.Items)) {
+                customer.items.push(...route.Items); // Aggregate items
+            } else {
+                console.warn(`Items for route ${route._id} is not an array or is undefined.`);
+            }
+            
+            customer.total_quantity += route.total_item_quantity || 0; // Ensure total_quantity is a number
         });
 
         // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_order_status }]) => ({
-            _id,
-            name,         // This will be the name of the customer
-            order_code,
-            items,
-            address,
-            total_quantity,
-            phone,
-            metafield_order_status, // Include in the final customer object
-        }));
+        const customers = Array.from(customerMap.values());
 
         res.json({ customers });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error in rtoData:', error.message);
+        console.error('Stack trace:', error.stack);
+        res.status(500).json({ message: 'Server error', details: error.message });
     }
-}
+};
+
 
 const rtoProductDetails = async (req, res) => {
     try {
@@ -109,28 +117,28 @@ const rtoProductDetails = async (req, res) => {
 }
 
 const updateRTOStatus = async (req, res) => {
-    const { customerName } = req.params;
+    const { customerName, orderType } = req.params;  // Assuming orderType is passed as a URL parameter
     const { deliveryStatus } = req.body;
 
     try {
+        // Check for open locks
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
-
-        console.log(lockedStatuses);
 
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Cannot update delivery status while there are open locks');
         }
 
+        // Update the delivery status for the specific customer and order type
         const result = await Route.updateMany(
             {
                 shipping_address_full_name: customerName,
-                metafield_delivery_status: { $in: ['Reverse Pickup', 'Replacement'] }
+                metafield_order_type: orderType // Use the specific order type
             },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
 
         if (result.matchedCount === 0) {
-            return res.status(404).send('No records found to update');
+            return res.status(404).send('No records found to update for the given customer and order type');
         }
 
         res.status(200).send('RTO status updated successfully');
@@ -139,6 +147,7 @@ const updateRTOStatus = async (req, res) => {
         res.status(500).send('Server error');
     }
 }
+
 
 module.exports = {
     rtoData,
