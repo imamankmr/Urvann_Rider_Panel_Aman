@@ -240,15 +240,6 @@ const DeliveryScreen = ({ route }) => {
   };
 
   const handleDeliveryStatusChange = (id, value) => {
-    // If the selected value is null (or not set), directly update the status without confirmation
-    if (value === null) {
-      setDeliveryStatuses(prev => ({
-        ...prev,
-        [id]: value
-      }));
-      return;
-    }
-
     if (deliveryLockedStatuses[id]) {
       Alert.alert('Status Locked', 'This status cannot be changed anymore.');
       return;
@@ -256,13 +247,6 @@ const DeliveryScreen = ({ route }) => {
 
     const name = deliveryCustomers.find(c => c._id === id)?.name;
     if (name) {
-      updateDeliveryStatus(name, value).then((res) => {
-        if (res.status === 401) {
-          Alert.alert('Error', 'Cannot update delivery status while there are open locks');
-          return;
-        }
-      });
-
       Alert.alert(
         'Confirm Status Change',
         `Are you sure you want to update the delivery status to "${value}"?`,
@@ -274,15 +258,22 @@ const DeliveryScreen = ({ route }) => {
           {
             text: 'Yes',
             onPress: async () => {
-              await updateDeliveryStatus(name, value);
-              setDeliveryStatuses(prev => ({
-                ...prev,
-                [id]: value
-              }));
-              setDeliveryLockedStatuses(prev => ({
-                ...prev,
-                [id]: true // Lock the status after confirming
-              }));
+              const res = await updateDeliveryStatus(name, value);
+              if (res.status !== 401) {
+                console.log('Status before update:', deliveryStatuses);
+                setDeliveryStatuses(prev => {
+                  const updatedStatuses = { ...prev, [id]: value };
+                  console.log('Status after update:', updatedStatuses);
+                  return updatedStatuses;
+                });
+                setDeliveryLockedStatuses(prev => {
+                  const updatedLockedStatuses = { ...prev, [id]: true };
+                  console.log('Locked statuses after update:', updatedLockedStatuses);
+                  return updatedLockedStatuses;
+                });
+              } else {
+                Alert.alert('Error', 'Cannot update delivery status while there are open locks');
+              }
             },
           },
         ]
@@ -357,12 +348,12 @@ const DeliveryScreen = ({ route }) => {
         return '#f8d7da'; // Red
       case 'Delivered':
         return '#d4edda'; // Green
-      case 'Delivery failed':
+      case 'Delivery Failed':
         return '#f8d7da'; // Red
       default:
-        return '#fff'; // Default background color
+        return '#fff'; // Default background color (white)
     }
-  };
+  };  
 
   const deliveryStatusOptions = [
     { label: 'Delivered', value: 'Delivered' },

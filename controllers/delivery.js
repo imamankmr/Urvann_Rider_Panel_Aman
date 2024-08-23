@@ -135,11 +135,13 @@ const updateDeliveryStatus = async (req, res) => {
 
         const result = await Route.updateMany(
             {
-                metafield_delivery_status: { $in: ['', 'Replacement', null] }
+                metafield_order_type: { $in: [null] },
+                shipping_address_full_name: customerName
             },
-            { shipping_address_full_name: customerName },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
+        
+        console.log('Update Result:', result);        
 
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update');
