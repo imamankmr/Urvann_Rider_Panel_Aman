@@ -66,7 +66,7 @@ app.get('/api/rtoscreen/:driverName', rto.rtoData);
 // server.js or app.js
 app.get('/rtoscreen/product-details', rto.rtoProductDetails);
 
-app.put('/api/update-rto-status/:customerName', rto.updateRTOStatus);
+app.put('/api/update-rto-status/:customerName/:orderType', rto.updateRTOStatus);
 
 
 // Server listening on port 5001

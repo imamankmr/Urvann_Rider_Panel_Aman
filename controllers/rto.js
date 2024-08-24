@@ -38,6 +38,7 @@ const rtoData = async (req, res) => {
                     total_quantity: 0,
                     phone: route.shipping_address_phone,
                     metafield_order_status: route.metafield_order_type,
+                    metafield_delivery_status: route.metafield_delivery_status || '', // Ensure status is included
                 });
             }
 
@@ -66,17 +67,18 @@ const rtoData = async (req, res) => {
 };
 
 
+
 const rtoProductDetails = async (req, res) => {
     try {
         // Extract query parameters
         const { order_code, metafield_order_type } = req.query;
 
         // Log parameters for debugging
-        console.log('Received query parameters:', req.query);
+        //console.log('Received query parameters:', req.query);
 
         // Check if parameters are missing
         if (!order_code || !metafield_order_type) {
-            console.log('Missing query parameters');
+            //console.log('Missing query parameters');
             return res.status(400).json({ message: 'Missing required query parameters' });
         }
 
@@ -86,7 +88,7 @@ const rtoProductDetails = async (req, res) => {
             metafield_order_type: metafield_order_type
         });
 
-        console.log('Route details:', routeDetails);
+        //console.log('Route details:', routeDetails);
 
         if (!routeDetails) {
             return res.status(404).json({ message: 'Order not found' });
@@ -95,7 +97,7 @@ const rtoProductDetails = async (req, res) => {
         // Fetch product details based on SKU from routeDetails
         const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
 
-        console.log('Product details:', productDetails);
+        //console.log('Product details:', productDetails);
 
         if (!productDetails) {
             return res.status(404).json({ message: 'Product not found' });
@@ -117,22 +119,29 @@ const rtoProductDetails = async (req, res) => {
 }
 
 const updateRTOStatus = async (req, res) => {
-    const { customerName, orderType } = req.params;  // Assuming orderType is passed as a URL parameter
+    const { customerName, orderType } = req.params; // Use parameters directly
     const { deliveryStatus } = req.body;
 
+    console.log("Received parameters:", { customerName, orderType, deliveryStatus });
+
+    if (!deliveryStatus) {
+        console.warn('Delivery status is undefined or null');
+        return res.status(400).send('Delivery status is required');
+    }
+
     try {
-        // Check for open locks
+        // Check if there are open locks
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
 
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Cannot update delivery status while there are open locks');
         }
 
-        // Update the delivery status for the specific customer and order type
+        // Update RTO status
         const result = await Route.updateMany(
             {
                 shipping_address_full_name: customerName,
-                metafield_order_type: orderType // Use the specific order type
+                metafield_order_type: orderType
             },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
@@ -143,11 +152,11 @@ const updateRTOStatus = async (req, res) => {
 
         res.status(200).send('RTO status updated successfully');
     } catch (error) {
-        console.error(error);
+        console.error('Error in updateRTOStatus:', error.message);
+        console.error('Stack trace:', error.stack);
         res.status(500).send('Server error');
     }
-}
-
+};
 
 module.exports = {
     rtoData,

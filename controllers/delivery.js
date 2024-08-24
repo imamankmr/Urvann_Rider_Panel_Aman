@@ -60,7 +60,7 @@ const customers = async (req, res) => {
             return res.status(404).json({ message: 'No customers found for this driver' });
         }
 
-        // Create a map to aggregate item quantities by customer
+        // Create a map to aggregate item quantities and statuses by customer
         const customerMap = new Map();
 
         routes.forEach(route => {
@@ -72,6 +72,7 @@ const customers = async (req, res) => {
                     address: route.shipping_address_address,
                     total_quantity: route.total_item_quantity, // Initialize with current quantity
                     phone: route.shipping_address_phone,
+                    metafield_delivery_status: route.metafield_delivery_status || '' // Fetch the status
                 });
             } else {
                 // Aggregate quantity for the existing customer
@@ -82,7 +83,7 @@ const customers = async (req, res) => {
         });
 
         // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone }]) => ({
+        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_delivery_status }]) => ({
             _id,
             name,         // This will be the name of the customer
             order_code,
@@ -90,14 +91,16 @@ const customers = async (req, res) => {
             address,
             total_quantity,
             phone,
+            metafield_delivery_status, // Include status in response
         }));
 
-        res.json({ customers }); // Return the customers with aggregated quantity
+        res.json({ customers }); // Return the customers with aggregated quantity and status
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 }
+
 
 // const updateDeliveryStatus = async (req, res) => {
 //     const { customerName } = req.params;
