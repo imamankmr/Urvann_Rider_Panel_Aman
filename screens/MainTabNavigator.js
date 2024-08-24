@@ -2,9 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import PayoutScreen from './PayoutScreen';
-import DailyUpdatesScreen from './DailyUpdatesScreen';
-import RiderCodesScreen from './RiderCodesScreen';
-import DeliveryTabNavigator from './DeliveryTabNavigator'; // Import the DeliveryTabNavigator component
+import DeliveryScreen from './DeliveryScreen';
+import PickupTabNavigator from './PickupTabNavigator'; // Import the PickupTabNavigator
+import ReturnsTabNavigator from './ReturnsTabNavigator'; // Import the new ReturnsTabNavigator
 import { TouchableOpacity, Text } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,10 +15,7 @@ const MainTabNavigator = ({ navigation, route }) => {
   const driverName = route?.params?.driverName ?? 'defaultDriverName';
 
   const handleLogout = async () => {
-    // Clear any async storage or context related to the user session
-    await AsyncStorage.removeItem('userToken'); // Assuming you stored token as 'userToken'
-  
-    // Reset the navigation stack to prevent going back to the main screen
+    await AsyncStorage.removeItem('userToken');
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
@@ -35,14 +32,14 @@ const MainTabNavigator = ({ navigation, route }) => {
           if (route.name === 'Payout') {
             iconName = 'cash';
             return <Ionicons name={iconName} size={size} color={color} />;
-          // } else if (route.name === 'Pickup') {
-          //   iconName = 'truck-delivery';
-          //   return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'Daily Updates') {
-            iconName = 'clipboard-list';
+          } else if (route.name === 'Pickup') {
+            iconName = 'truck';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'Order') {
-            iconName = 'truck-delivery';
+          } else if (route.name === 'Returns') {
+            iconName = 'package-variant';
+            return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+          }else if (route.name === 'Delivery') {
+            iconName = 'package';
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           }
         },
@@ -57,9 +54,9 @@ const MainTabNavigator = ({ navigation, route }) => {
           fontSize: 12,
         },
         headerStyle: {
-          backgroundColor: '#287238', // Set header background color to green
+          backgroundColor: '#287238',
         },
-        headerTintColor: '#fff', // Set header text color
+        headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
         },
@@ -70,16 +67,10 @@ const MainTabNavigator = ({ navigation, route }) => {
         ),
       })}
     >
-      
-      <Tab.Screen
-        name="Order"
-        initialParams={{ driverName }}
-        component={DeliveryTabNavigator} // Directly use DeliveryTabNavigator
-      />
+      <Tab.Screen name="Pickup" component={PickupTabNavigator} initialParams={{ driverName }} />
+      <Tab.Screen name="Returns" component={ReturnsTabNavigator} initialParams={{ driverName }} />
       <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />
-      <Tab.Screen name="Daily Updates" component={DailyUpdatesScreen} initialParams={{ driverName }} />
-      {/* <Tab.Screen name="Pickup" component={RiderCodesScreen} initialParams={{ driverName }} /> */}
-      
+      <Tab.Screen name="Delivery" component={DeliveryScreen} initialParams={{ driverName }} />
     </Tab.Navigator>
   );
 };

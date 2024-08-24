@@ -1,11 +1,11 @@
 import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import PickedScreen from './PickedScreen'; // Import your Picked screen
-import NotPickedScreen from './NotPickedScreen'; // Import your Not Picked screen
+import DeliveredScreen from './DeliveredScreen'; // Import your Delivered screen
+import NotDeliveredScreen from './NotDeliveredScreen'; // Import your Not Delivered screen
 
 const TopTab = createMaterialTopTabNavigator();
 
-const PickupTabNavigator = ({ route }) => {
+const ReturnsTabNavigator = ({ route }) => {
   const { driverName } = route.params; // Extract driverName from the route params
 
   return (
@@ -19,17 +19,17 @@ const PickupTabNavigator = ({ route }) => {
       }}
     >
       <TopTab.Screen 
-        name="Picked"
-        component={PickedScreen}
+        name="Delivered"
+        component={DeliveredScreen}
         initialParams={{ driverName }} // Pass driverName as initialParams
       />
       <TopTab.Screen 
-        name="Not Picked"
-        component={NotPickedScreen}
+        name="Not Delivered"
+        component={NotDeliveredScreen}
         initialParams={{ driverName }} // Pass driverName as initialParams
       />
     </TopTab.Navigator>
   );
 };
 
-export default PickupTabNavigator;
+export default ReturnsTabNavigator;
