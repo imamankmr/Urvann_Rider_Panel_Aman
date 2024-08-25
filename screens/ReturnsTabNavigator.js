@@ -18,14 +18,15 @@ const ReturnsTabNavigator = ({ route }) => {
         tabBarStyle: { backgroundColor: '#f9f9f9' }, // Background color
       }}
     >
-      <TopTab.Screen 
-        name="Delivered"
-        component={DeliveredScreen}
-        initialParams={{ driverName }} // Pass driverName as initialParams
-      />
+      
       <TopTab.Screen 
         name="Not Delivered"
         component={NotDeliveredScreen}
+        initialParams={{ driverName }} // Pass driverName as initialParams
+      />
+      <TopTab.Screen 
+        name="Delivered"
+        component={DeliveredScreen}
         initialParams={{ driverName }} // Pass driverName as initialParams
       />
     </TopTab.Navigator>

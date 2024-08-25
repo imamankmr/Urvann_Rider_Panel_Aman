@@ -312,8 +312,6 @@ const pickupLockScreen = async (req, res) => {
     }
 };
 
-
-
 const reversePickupSellers = async (req, res) => {
     const { driverName } = req.params;
     console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
@@ -547,6 +545,7 @@ const reversePickupProducts = async (req, res) => {
                 { metafield_order_type: 'Reverse Pickup' },
                 { metafield_order_type: 'Replacement' },
                 { metafield_order_type: 'Delivery Failed' },
+                {metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }}
             ]
         };
 
@@ -592,8 +591,9 @@ const reverseDeliveredProducts = async (req, res) => {
                 { metafield_order_type: 'Reverse Pickup' },
                 { metafield_order_type: 'Replacement' },
                 { metafield_order_type: 'Delivery Failed' },
+                {metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }}
             ],
-            "Delivery Status": 'Delivered' // Added filter for 'Delivered' status
+            Delivery_Status: 'Delivered' // Added filter for 'Delivered' status
         };
 
         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status Delivery_Status').lean();
@@ -638,8 +638,9 @@ const reverseNotDeliveredProducts = async (req, res) => {
                 { metafield_order_type: 'Reverse Pickup' },
                 { metafield_order_type: 'Replacement' },
                 { metafield_order_type: 'Delivery Failed' },
+                {metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }}
             ],
-            "Delivery Status": 'Not Delivered' // Added filter for 'Delivered' status
+            Delivery_Status: 'Not Delivered' // Added filter for 'Delivered' status
         };
 
         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status Delivery_Status').lean();

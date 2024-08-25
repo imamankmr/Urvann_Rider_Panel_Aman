@@ -19,13 +19,13 @@ const PickupTabNavigator = ({ route }) => {
       }}
     >
       <TopTab.Screen 
-        name="Picked"
-        component={PickedScreen}
+        name="Not Picked"
+        component={NotPickedScreen}
         initialParams={{ driverName }} // Pass driverName as initialParams
       />
       <TopTab.Screen 
-        name="Not Picked"
-        component={NotPickedScreen}
+        name="Picked"
+        component={PickedScreen}
         initialParams={{ driverName }} // Pass driverName as initialParams
       />
     </TopTab.Navigator>

@@ -69,8 +69,8 @@ const MainTabNavigator = ({ navigation, route }) => {
     >
       <Tab.Screen name="Pickup" component={PickupTabNavigator} initialParams={{ driverName }} />
       <Tab.Screen name="Returns" component={ReturnsTabNavigator} initialParams={{ driverName }} />
-      <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />
       <Tab.Screen name="Delivery" component={DeliveryScreen} initialParams={{ driverName }} />
+      <Tab.Screen name="Payout" component={PayoutScreen} initialParams={{ driverName }} />   
     </Tab.Navigator>
   );
 };
