@@ -29,7 +29,7 @@ const Photo = require('../models/photo');
 
 const pickupSellers = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Fetching pickup sellers for driver: ${driverName}`);
+    
   
     try {
       // Find the lock status for the given driver
@@ -64,7 +64,7 @@ const pickupSellers = async (req, res) => {
         };
       }));
   
-      console.log('Pickup sellers with counts:', sellersWithCounts);
+     
       res.json({ sellers: sellersWithCounts, lockStatus });
     } catch (error) {
       console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
@@ -74,22 +74,22 @@ const pickupSellers = async (req, res) => {
 
 const pickedSellers = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Fetching pickup sellers for driver: ${driverName}`); // Log to confirm the endpoint is hit
+    
   
     try {
         // Log before trying to find the driver
-        console.log(`Looking for driver: ${driverName}`);
+        
         
         // Find the lock status for the given driver
         const driverData = await Route.findOne({ 'Driver Name': driverName }, 'Lock_Status');
         if (!driverData) {
-            console.log(`Driver not found: ${driverName}`);
+           
         }
 
         const lockStatus = driverData ? driverData.Lock_Status : 'open'; // Default to 'open' if not found
   
         // Log before fetching sellers
-        console.log(`Fetching sellers for driver: ${driverName} with status 'Picked'`);
+        
         
         // Find all distinct sellers with products marked as "Picked"
         const sellers = await Route.find({
@@ -103,7 +103,7 @@ const pickedSellers = async (req, res) => {
         }).distinct('seller_name');
 
         if (sellers.length === 0) {
-            console.log(`No sellers found for driver: ${driverName}`);
+           
         }
         
         // Calculate the total product count for each seller where Pickup_Status is "Picked"
@@ -135,7 +135,7 @@ const pickedSellers = async (req, res) => {
             };
         }));
 
-        console.log('Pickup sellers with counts:', sellersWithCounts);
+        // console.log('Pickup sellers with counts:', sellersWithCounts);
         res.json({ sellers: sellersWithCounts, lockStatus });
     } catch (error) {
         console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
@@ -146,7 +146,7 @@ const pickedSellers = async (req, res) => {
 
 const NotPickedSellers = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Fetching pickup sellers for driver: ${driverName}`);
+    //console.log(`Fetching pickup sellers for driver: ${driverName}`);
   
     try {
       // Find the lock status for the given driver
@@ -193,7 +193,7 @@ const NotPickedSellers = async (req, res) => {
         };
       }));
   
-      console.log('Pickup sellers with counts:', sellersWithCounts);
+    //  console.log('Pickup sellers with counts:', sellersWithCounts);
       res.json({ sellers: sellersWithCounts, lockStatus });
     } catch (error) {
       console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
@@ -203,7 +203,7 @@ const NotPickedSellers = async (req, res) => {
 
 const NotDeliveredSellers = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
+    //console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
 
     try {
         // Find distinct sellers with the correct filters
@@ -240,7 +240,7 @@ const NotDeliveredSellers = async (req, res) => {
             };
         }));
 
-        console.log('Reverse pickup sellers with counts:', sellersWithCounts);
+        //console.log('Reverse pickup sellers with counts:', sellersWithCounts);
         res.json(sellersWithCounts);
     } catch (error) {
         console.error(`Error fetching reverse pickup seller names and counts for ${driverName}:`, error);
@@ -251,7 +251,7 @@ const NotDeliveredSellers = async (req, res) => {
 
 const deliveredSellers = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
+   // console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
 
     try {
         // Find distinct sellers with the correct filters
@@ -288,7 +288,7 @@ const deliveredSellers = async (req, res) => {
             };
         }));
 
-        console.log('Reverse pickup sellers with counts:', sellersWithCounts);
+        //console.log('Reverse pickup sellers with counts:', sellersWithCounts);
         res.json(sellersWithCounts);
     } catch (error) {
         console.error(`Error fetching reverse pickup seller names and counts for ${driverName}:`, error);
@@ -298,7 +298,7 @@ const deliveredSellers = async (req, res) => {
 
 const pickupLockScreen = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Locking pickup screen for driver: ${driverName}`);
+   // console.log(`Locking pickup screen for driver: ${driverName}`);
   
     try {
       await Route.updateMany(
@@ -314,7 +314,7 @@ const pickupLockScreen = async (req, res) => {
 
 const reversePickupSellers = async (req, res) => {
     const { driverName } = req.params;
-    console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
+   // console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
 
     try {
         const sellers = await Route.find({
@@ -346,7 +346,7 @@ const reversePickupSellers = async (req, res) => {
             };
         }));
 
-        console.log('Reverse pickup sellers with counts:', sellersWithCounts);
+       // console.log('Reverse pickup sellers with counts:', sellersWithCounts);
         res.json(sellersWithCounts);
     } catch (error) {
         console.error(`Error fetching reverse pickup seller names and counts for ${driverName}:`, error);
