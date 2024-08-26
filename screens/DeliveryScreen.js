@@ -348,7 +348,7 @@ const handleRtoStatusChange = (id, value) => {
             return '#d4edda'; // Green
         case 'Reverse Pickup Failed':
         case 'Replacement Pickup Failed':
-        case 'Delivery Failed':
+        case 'Delivery failed':
             return '#f8d7da'; // Red
         default:
             //console.warn('Unknown status:', status);
@@ -443,10 +443,10 @@ const handleRtoStatusChange = (id, value) => {
                             </View>
                             <View style={deliveryStyles.iconContainer}>
                                 <TouchableOpacity onPress={() => openMap(item.address)} style={deliveryStyles.iconButton}>
-                                    <MaterialCommunityIcons name="map-marker-outline" size={30} color="#287238" />
+                                    <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => makeCall(item.phone)} style={deliveryStyles.iconButton}>
-                                    <FontAwesome name="phone" size={30} color="#287238" />
+                                    <FontAwesome name="phone" size={35} color="#287238" />
                                 </TouchableOpacity>
                             </View>
                             <TouchableOpacity style={deliveryStyles.dragHandle} onLongPress={drag}>
@@ -514,10 +514,10 @@ const handleRtoStatusChange = (id, value) => {
                   </TouchableOpacity>
                   <View style={rtoStyles.iconContainer}>
                       <TouchableOpacity onPress={() => openMap(item.address)} style={rtoStyles.iconButton}>
-                          <MaterialCommunityIcons name="map-marker-outline" size={30} color="#287238" />
+                          <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => makeCall(item.phone)} style={rtoStyles.iconButton}>
-                          <FontAwesome name="phone" size={30} color="#287238" />
+                          <FontAwesome name="phone" size={35} color="#287238" />
                       </TouchableOpacity>
                   </View>
               </View>
@@ -555,7 +555,8 @@ const deliveryStyles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 15,
+    maxWidth: 282,
   },
   orderCode: {
     fontSize: 16,
@@ -638,7 +639,8 @@ const rtoStyles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 35,
+    maxWidth: 320,
   },
   orderCodeContainer: {
     flexDirection: 'row',
@@ -715,7 +717,7 @@ const rtoStyles = StyleSheet.create({
     flexShrink: 0,
   },
   iconButton: {
-    marginHorizontal: 8,
+    // marginHorizontal: 2,
     marginBottom: 10,
   },
   detailsButton: {
@@ -745,7 +747,7 @@ const pickerSelectStyles = StyleSheet.create({
   },
   inputAndroid: {
     fontSize: 16,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#ddd',

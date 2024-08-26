@@ -23,7 +23,7 @@ const routeSchema = new mongoose.Schema({
   // Tag_code: { type: Number, required: true },
   FINAL: { type: String, required: true },
   Items: { type: Number, required: true },
-  // Delivery_Status: { type: String, required: true },
+  Delivery_Status: { type: String, required: true },
   'Driver Name': { type: String, required: true },
   Pickup_Status: { type: String, required: true },
   metafield_delivery_status: { type: String, required: true },

@@ -86,7 +86,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
   
     try {
-      await axios.post(`${BACKEND_URL}/api/update-delivery-status-bulk`, {
+      await axios.post(`${BACKEND_URL}/api/update-returns-delivery-status-bulk`, {
         sellerName,
         driverName,
         finalCode,
@@ -126,7 +126,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Delivery Status"];
-      await axios.post(`${BACKEND_URL}/api/update-delivery-status`, {
+      await axios.post(`${BACKEND_URL}/api/update-returns-delivery-status`, {
         sku,
         orderCode,
         status: newStatus
@@ -307,10 +307,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-  pickedStatus: {
+  deliveredStatus: {
     color: '#28a745',
   },
-  notPickedStatus: {
+  notDeliveredStatus: {
     color: '#dc3545',
   },
   modalContainer: {
@@ -336,10 +336,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  picked: {
+  delivered: {
     backgroundColor: '#d4edda',
   },
-  notPicked: {
+  notDelivered: {
     backgroundColor: '#f9f9f9',
   },
 });

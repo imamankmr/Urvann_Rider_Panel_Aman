@@ -48,6 +48,8 @@ app.post('/api/update-pickup-status', pickup.updatePickupStatus);
 
 // POST /api/update-pickup-status-bulk
 app.post('/api/update-pickup-status-bulk', pickup.updatePickupStatusBulk);
+app.post('/api/update-returns-delivery-status', pickup.updateReturnsDeliveryStatus);
+app.post('/api/update-returns-delivery-status-bulk', pickup.updateReturnsDeliveryStatusBulk);
 
 
 // GET /api/data/:driverName
@@ -75,6 +77,7 @@ app.get('/api/rtoscreen/:driverName', rto.rtoData);
 app.get('/rtoscreen/product-details', rto.rtoProductDetails);
 
 app.put('/api/update-rto-status/:customerName/:orderType', rto.updateRTOStatus);
+
 
 
 // Server listening on port 5001

@@ -699,6 +699,30 @@ const updatePickupStatus = async (req, res) => {
     }
 }
 
+const updateReturnsDeliveryStatus = async (req, res) => {
+    const { sku, orderCode, status } = req.body;
+
+    try {
+        if (!sku || !orderCode) {
+            return res.status(400).json({ message: 'SKU and Order Code are required' });
+        }
+
+        const result = await Route.updateOne(
+            { line_item_sku: sku, FINAL: orderCode },
+            { $set: { Delivery_Status: status } }
+        );
+
+        if (result.nModified === 0) {
+            return res.status(404).json({ message: 'No matching document found to update' });
+        }
+
+        res.status(200).json({ message: 'Delivery status updated successfully' });
+    } catch (error) {
+        console.error('Error updating delivery status:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
 const updatePickupStatusBulk = async (req, res) => {
     const { sellerName, driverName, finalCode, status } = req.body;
 
@@ -706,6 +730,26 @@ const updatePickupStatusBulk = async (req, res) => {
         const result = await Route.updateMany(
             { seller_name: sellerName, "Driver Name": driverName, FINAL: finalCode },
             { $set: { Pickup_Status: status } }
+        );
+
+        if (result.nModified === 0) {
+            return res.status(404).json({ message: 'No matching documents found to update' });
+        }
+
+        res.status(200).json({ message: 'Pickup status updated in bulk successfully.' });
+    } catch (error) {
+        console.error('Error updating pickup status in bulk:', error);
+        res.status(500).json({ error: 'Failed to update pickup status in bulk.' });
+    }
+}
+
+const updateReturnsDeliveryStatusBulk = async (req, res) => {
+    const { sellerName, driverName, finalCode, status } = req.body;
+
+    try {
+        const result = await Route.updateMany(
+            { seller_name: sellerName, "Driver Name": driverName, FINAL: finalCode },
+            { $set: { Delivery_Status: status } }
         );
 
         if (result.nModified === 0) {
@@ -736,5 +780,7 @@ module.exports = {
     reverseNotDeliveredProducts,
     pickedProducts,
     updatePickupStatus,
-    updatePickupStatusBulk
+    updateReturnsDeliveryStatus,
+    updatePickupStatusBulk,
+    updateReturnsDeliveryStatusBulk
 };
