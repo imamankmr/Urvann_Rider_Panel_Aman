@@ -42,10 +42,10 @@ const PickedScreen = ({ route }) => {
     axios.post(`${BACKEND_URL}/api/driver/${driverName}/lock-pickup`)
       .then(response => {
         setIsLocked(true); // Update the button text to "Locked"
-        Alert.alert('Success', 'Pickup screen locked successfully');
+        Alert.alert('Success', 'Pickup screen submitted successfully');
       })
       .catch(error => {
-        console.error(`Error locking pickup screen for ${driverName}:`, error);
+        console.error(`Error submitting pickup screen for ${driverName}:`, error);
         Alert.alert('Error', 'Failed to lock the pickup screen');
       });
   };
@@ -76,7 +76,7 @@ const PickedScreen = ({ route }) => {
         disabled={isLocked} // Disable button if already locked
       >
         <Text style={styles.lockButtonText}>
-          {isLocked ? 'Locked' : 'Lock Pickup Screen'}
+          {isLocked ? 'Completed' : 'Complete Pickup'}
         </Text>
       </TouchableOpacity>
     </View>
