@@ -131,7 +131,7 @@ const updateRTOStatus = async (req, res) => {
 
     try {
         // Check if there are open locks
-        const lockedStatuses = await Route.find({ Lock_Status: "open", Pickup_Status: "Not Picked" });
+        const lockedStatuses = await Route.find({ Lock_Status: "Open" });
 
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Cannot update delivery status while there are open locks');
