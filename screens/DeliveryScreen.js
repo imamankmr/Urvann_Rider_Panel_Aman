@@ -386,6 +386,10 @@ const handleRtoStatusChange = (id, value) => {
     navigation.navigate('RTOProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType });
   };
 
+  const DeliveryNavigateToProductDetails = (orderCode, metafieldOrderType) => {
+    navigation.navigate('DeliveryProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType });
+  };
+
   const keyExtractor = (item) => (item.type || `type-${Math.random()}`) + "-" + (item._id?.toString() || `key-${Math.random()}`);
 
   return (
@@ -440,6 +444,12 @@ const handleRtoStatusChange = (id, value) => {
                                         <Text style={deliveryStyles.counterValue}>/{deliveryCustomers.find(c => c._id === item._id)?.items || 0}</Text>
                                     </View>
                                 )}
+                                <TouchableOpacity
+                                    style={deliveryStyles.detailsButton}
+                                    onPress={() => DeliveryNavigateToProductDetails(item.order_code, item.metafield_order_status)}
+                                >
+                                    <Text style={deliveryStyles.detailsButtonText}>View Products</Text>
+                                </TouchableOpacity>
                             </View>
                             <View style={deliveryStyles.iconContainer}>
                                 <TouchableOpacity onPress={() => openMap(item.address)} style={deliveryStyles.iconButton}>
@@ -625,6 +635,17 @@ const deliveryStyles = StyleSheet.create({
   iconButton: {
     marginHorizontal: 8,
     marginBottom: 10,
+  },
+  detailsButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#287238',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  detailsButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
 });
 

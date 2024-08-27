@@ -68,6 +68,7 @@ app.get('/api/payable/:driverName', payout.payable);
 // Endpoints for Delivery
 app.get('/api/customers/:driverName', delivery.customers);
 app.put('/api/update-delivery-status/:customerName', delivery.updateDeliveryStatus);
+app.get('/deliveryscreen/product-details', delivery.deliveryProductDetails);
 
 // Endpoints for RTO
 app.get('/api/rtoscreen/:driverName', rto.rtoData);

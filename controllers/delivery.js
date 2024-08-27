@@ -1,4 +1,5 @@
 const Route = require('../models/route');
+const Photo = require('../models/photo');
 
 // const customers = async (req, res) => {
 //     try {
@@ -123,6 +124,57 @@ const customers = async (req, res) => {
 //     }
 // }
 
+const deliveryProductDetails = async (req, res) => {
+    try {
+        // Extract query parameters
+        const { order_code, /* metafield_order_type */ } = req.query;
+        console.log('Received query parameters:', req.query);
+
+        // Log parameters for debugging
+        //console.log('Received query parameters:', req.query);
+
+        // Check if parameters are missing
+        if (!order_code /*|| !metafield_order_type*/) {
+            //console.log('Missing query parameters');
+            return res.status(400).json({ message: 'Missing required query parameters' });
+        }
+
+        // Fetch route details based on query parameters
+        const routeDetails = await Route.findOne({
+            FINAL: order_code,
+            // metafield_order_type: metafield_order_type
+        });
+
+        //console.log('Route details:', routeDetails);
+
+        if (!routeDetails) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Fetch product details based on SKU from routeDetails
+        const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
+
+        //console.log('Product details:', productDetails);
+
+        if (!productDetails) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Send response with product details
+        const response = {
+            line_item_sku: routeDetails.line_item_sku,
+            line_item_name: routeDetails.line_item_name,
+            image1: productDetails.image_url || null,
+            total_item_quantity: routeDetails.total_item_quantity
+        };
+
+        res.json(response);
+    } catch (error) {
+        console.error('Error fetching product details:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}
+
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
     const { deliveryStatus } = req.body;
@@ -159,5 +211,6 @@ const updateDeliveryStatus = async (req, res) => {
 
 module.exports = {
     customers,
+    deliveryProductDetails,
     updateDeliveryStatus
 }
