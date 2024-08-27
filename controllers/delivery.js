@@ -128,7 +128,7 @@ const deliveryProductDetails = async (req, res) => {
     try {
         // Extract query parameters
         const { order_code, /* metafield_order_type */ } = req.query;
-        console.log('Received query parameters:', req.query);
+        // console.log('Received query parameters:', req.query);
 
         // Log parameters for debugging
         //console.log('Received query parameters:', req.query);
@@ -165,7 +165,8 @@ const deliveryProductDetails = async (req, res) => {
             line_item_sku: routeDetails.line_item_sku,
             line_item_name: routeDetails.line_item_name,
             image1: productDetails.image_url || null,
-            total_item_quantity: routeDetails.total_item_quantity
+            total_item_quantity: routeDetails.total_item_quantity,
+            pickup_status: routeDetails.Pickup_Status,
         };
 
         res.json(response);

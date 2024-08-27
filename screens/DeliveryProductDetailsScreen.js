@@ -59,6 +59,11 @@ const ProductDetailsScreen = ({ route }) => {
             <Text style={styles.text}>
               <Text style={styles.label}>Quantity: </Text>{product.total_item_quantity}
             </Text>
+            <Text style={styles.text}>
+              <Text style={[styles.label, product.pickup_status === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+                {product.pickup_status}
+              </Text>
+            </Text>
           </View>
         </View>
       )}
@@ -118,6 +123,12 @@ const styles = StyleSheet.create({
   },
   noMargin: {
     marginBottom: -1, // Ensures no margin between SKU and Quantity
+  },
+  pickedStatus: {
+    color: '#28a745',
+  },
+  notPickedStatus: {
+    color: '#dc3545',
   },
 });
 
