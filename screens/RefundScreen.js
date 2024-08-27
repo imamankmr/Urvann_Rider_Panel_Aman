@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
 import { BACKEND_URL } from 'react-native-dotenv';
+import RefreshButton from '../components/RefeshButton';
 
 const RefundScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -9,21 +10,29 @@ const RefundScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchRefunds = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/refund/${driverName}`);
-        setRefunds(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching refunds:', error);
-        setError(error);
-        setLoading(false);
-      }
-    };
+  const fetchRefunds = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/refund/${driverName}`);
+      setRefunds(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching refunds:', error);
+      setError(error);
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchRefunds();
   }, [driverName]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchRefunds();
+    setRefreshing(false);
+  };
 
   const renderRefundItem = ({ item }) => (
     <View style={styles.row}>
@@ -49,6 +58,7 @@ const RefundScreen = ({ route }) => {
     return (
       <View style={styles.container}>
         <Text>Error loading refund data.</Text>
+        <RefreshButton onRefresh={handleRefresh} />
       </View>
     );
   }
@@ -74,6 +84,7 @@ const RefundScreen = ({ route }) => {
           />
         </View>
       </ScrollView>
+      <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
 };

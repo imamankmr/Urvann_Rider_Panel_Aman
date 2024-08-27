@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { BACKEND_URL } from 'react-native-dotenv';
 
@@ -8,22 +8,29 @@ const DeliveryUpdatesScreen = ({ route }) => {
   const [deliveryUpdates, setDeliveryUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDeliveryUpdates = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/data/${driverName}`);
+      setDeliveryUpdates(response.data.deliveryUpdates);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching delivery updates:', error);
+      setError(error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDeliveryUpdates = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/data/${driverName}`);
-        setDeliveryUpdates(response.data.deliveryUpdates);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching delivery updates:', error);
-        setError(error);
-        setLoading(false);
-      }
-    };
-
     fetchDeliveryUpdates();
   }, [driverName]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDeliveryUpdates();
+    setRefreshing(false);
+  };
 
   const renderItem = ({ item }) => (
     <View style={styles.row}>
@@ -50,7 +57,10 @@ const DeliveryUpdatesScreen = ({ route }) => {
   }
 
   return (
-    <ScrollView horizontal>
+    <ScrollView
+      horizontal
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+    >
       <View style={styles.container}>
         <Text style={styles.title}>Delivery Updates for {driverName}</Text>
         <View>

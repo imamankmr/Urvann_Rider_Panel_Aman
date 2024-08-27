@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import axios from 'axios';
 import { BACKEND_URL } from 'react-native-dotenv';
+import RefreshButton from '../components/RefeshButton';
 
 const SummaryScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -9,19 +10,19 @@ const SummaryScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/summary/${driverName}`);
-        setSummary(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching summary:', error);
-        setError(error);
-        setLoading(false);
-      }
-    };
+  const fetchSummary = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/summary/${driverName}`);
+      setSummary(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+      setError(error);
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSummary();
   }, [driverName]);
 
@@ -37,6 +38,7 @@ const SummaryScreen = ({ route }) => {
     return (
       <View style={styles.container}>
         <Text>Error loading summary data.</Text>
+        <RefreshButton onRefresh={fetchSummary} />
       </View>
     );
   }
@@ -78,6 +80,7 @@ const SummaryScreen = ({ route }) => {
           <Text style={styles.cell}>{summary['Total Paid']}</Text>
         </View>
       </View>
+      <RefreshButton onRefresh={fetchSummary} />
     </View>
   );
 };

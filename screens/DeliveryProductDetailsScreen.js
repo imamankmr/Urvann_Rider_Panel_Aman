@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
@@ -8,29 +8,36 @@ const ProductDetailsScreen = ({ route }) => {
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { order_code, metafield_order_type } = route.params;
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchProductDetails = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
-          params: {
-            order_code: order_code,
-            metafield_order_type: metafield_order_type,
-          },
-        });
-        setProducts(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError('Error fetching product details');
-        setLoading(false);
-      }
-    };
+  const fetchProductDetails = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
+        params: {
+          order_code: order_code,
+          metafield_order_type: metafield_order_type,
+        },
+      });
+      setProducts(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError('Error fetching product details');
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProductDetails();
   }, [order_code, metafield_order_type]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchProductDetails();
+    setRefreshing(false);
+  };
 
   if (loading) {
     return <ActivityIndicator size="large" color="#287238" />;
@@ -41,7 +48,10 @@ const ProductDetailsScreen = ({ route }) => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+    >
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Text style={styles.backButtonText}>← Back</Text>
       </TouchableOpacity>

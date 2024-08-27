@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
@@ -9,17 +9,26 @@ const RiderCodesScreen = ({ route }) => {
   const navigation = useNavigation();
   const { driverName, endpoint } = route.params || {}; // Extract driverName and endpoint from route params
 
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/driver/${driverName}/sellers/${endpoint}`);
+      setSellers(response.data);
+    } catch (error) {
+      console.error(`Error fetching seller names for ${driverName}:`, error);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/driver/${driverName}/sellers/${endpoint}`);
-        setSellers(response.data);
-      } catch (error) {
-        console.error(`Error fetching seller names for ${driverName}:`, error);
-      }
-    };
     fetchData();
   }, [driverName, endpoint]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const handleSellerPress = (sellerName) => {
     navigation.navigate('ProductDetails', { driverName, sellerName });
@@ -30,6 +39,7 @@ const RiderCodesScreen = ({ route }) => {
       <FlatList
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.tile} 

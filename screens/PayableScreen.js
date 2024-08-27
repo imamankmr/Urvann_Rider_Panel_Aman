@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
 import axios from 'axios';
 import { BACKEND_URL } from 'react-native-dotenv';
+import RefreshButton from '../components/RefeshButton';
 
 const PayableScreen = ({ route }) => {
   const { driverName } = route.params;
@@ -9,21 +10,29 @@ const PayableScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchPayables = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/payable/${driverName}`);
-        setPayables(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching payables:', error);
-        setError(error);
-        setLoading(false);
-      }
-    };
+  const fetchPayables = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/payable/${driverName}`);
+      setPayables(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching payables:', error);
+      setError(error);
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPayables();
   }, [driverName]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPayables();
+    setRefreshing(false);
+  };
 
   const renderPayableItem = ({ item }) => (
     <View style={styles.row}>
@@ -48,6 +57,7 @@ const PayableScreen = ({ route }) => {
     return (
       <View style={styles.container}>
         <Text>Error loading payable data.</Text>
+        <RefreshButton onRefresh={handleRefresh} />  
       </View>
     );
   }
@@ -72,6 +82,7 @@ const PayableScreen = ({ route }) => {
           />
         </View>
       </ScrollView>
+      <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
 };

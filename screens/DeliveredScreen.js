@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
@@ -17,6 +17,18 @@ const NotDeliveredScreen = ({ route }) => {
       .catch(error => console.error(`Error fetching reverse pickup sellers for ${driverName}:`, error));
   }, [driverName]);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    axios.get(`${BACKEND_URL}/api/drivers/${driverName}/delivered`)
+      .then(response => {
+        setSellers(response.data);
+      })
+      .catch(error => console.error(`Error fetching reverse pickup sellers for ${driverName}:`, error));
+    setRefreshing(false);
+  };
+
   const handleSellerPress = (sellerName) => {
     // Define the endpoint for the PickupDetails screen
     const endpoint = '/api/reverse-delivered-products';  // Adjust this endpoint as needed
@@ -33,6 +45,7 @@ const NotDeliveredScreen = ({ route }) => {
       <FlatList
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.tile} 

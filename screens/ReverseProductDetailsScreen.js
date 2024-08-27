@@ -4,6 +4,7 @@ import axios from 'axios';
 import Swiper from 'react-native-swiper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from 'react-native-dotenv';
+import RefreshButton from '../components/RefeshButton';
 
 const ReverseProductDetailsScreen = ({ route }) => {
   const { sellerName, driverName, endpoint } = route.params;
@@ -34,47 +35,51 @@ const ReverseProductDetailsScreen = ({ route }) => {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}${endpoint}`, {
+        params: {
+          seller_name: sellerName,
+          rider_code: driverName
+        }
+      });
+
+      const fetchedProducts = await Promise.all(response.data.products.map(async product => {
+        const localStatus = await loadDeliveryStatusLocally(product.line_item_sku, product.FINAL);
+        return {
+          ...product,
+          "Delivery Status": localStatus
+        };
+      }));
+
+      setProducts(fetchedProducts);
+      setOrderCodeQuantities(response.data.orderCodeQuantities);
+
+      // Initialize selectAll based on the fetched products' status
+      const initialSelectAll = {};
+      fetchedProducts.forEach(product => {
+        if (!initialSelectAll[product.FINAL]) {
+          initialSelectAll[product.FINAL] = true;
+        }
+        if (product["Delivery Status"] === "Not Delivered") {
+          initialSelectAll[product.FINAL] = false;
+        }
+      });
+      setSelectAll(initialSelectAll);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}${endpoint}`, {
-          params: {
-            seller_name: sellerName,
-            rider_code: driverName
-          }
-        });
-        
-        const fetchedProducts = await Promise.all(response.data.products.map(async product => {
-          const localStatus = await loadDeliveryStatusLocally(product.line_item_sku, product.FINAL);
-          return {
-            ...product,
-            "Delivery Status": localStatus
-          };
-        }));
-
-        setProducts(fetchedProducts);
-        setOrderCodeQuantities(response.data.orderCodeQuantities);
-
-        // Initialize selectAll based on the fetched products' status
-        const initialSelectAll = {};
-        fetchedProducts.forEach(product => {
-          if (!initialSelectAll[product.FINAL]) {
-            initialSelectAll[product.FINAL] = true;
-          }
-          if (product["Delivery Status"] === "Not Delivered") {
-            initialSelectAll[product.FINAL] = false;
-          }
-        });
-        setSelectAll(initialSelectAll);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, [sellerName, driverName]);
+
+  const handleRefresh = async () => {
+    await fetchProducts();
+  };
 
   const handleImagePress = (product) => {
     setSelectedProduct(product);
@@ -84,7 +89,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
   const toggleSelectAll = async (finalCode) => {
     const newStatus = !selectAll[finalCode] ? "Delivered" : "Not Delivered";
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
-  
+
     try {
       await axios.post(`${BACKEND_URL}/api/update-returns-delivery-status-bulk`, {
         sellerName,
@@ -96,13 +101,13 @@ const ReverseProductDetailsScreen = ({ route }) => {
         product.FINAL === finalCode ? { ...product, "Delivery Status": newStatus } : product
       );
       setProducts(updatedProducts);
-  
+
       await Promise.all(updatedProducts.map(async product => {
         if (product.FINAL === finalCode) {
           await saveDeliveryStatusLocally(product.line_item_sku, finalCode, newStatus);
         }
       }));
-  
+
     } catch (error) {
       console.error('Error updating delivery status in bulk:', error);
     }
@@ -116,9 +121,9 @@ const ReverseProductDetailsScreen = ({ route }) => {
       }
       return product;
     });
-  
+
     setProducts(updatedProducts);
-  
+
     try {
       const productToUpdate = updatedProducts.find(product => product.line_item_sku === sku && product.FINAL === orderCode);
       if (!productToUpdate) {
@@ -131,12 +136,12 @@ const ReverseProductDetailsScreen = ({ route }) => {
         orderCode,
         status: newStatus
       });
-  
+
       await saveDeliveryStatusLocally(sku, orderCode, newStatus);
-  
+
       const allDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Delivery Status"] === "Delivered");
       const allNotDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Delivery Status"] === "Not Delivered");
-  
+
       setSelectAll(prev => ({ ...prev, [orderCode]: allDelivered ? true : allNotDelivered ? false : false }));
     } catch (error) {
       console.error('Error updating delivery status:', error);
@@ -217,6 +222,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
           </TouchableWithoutFeedback>
         </Modal>
       )}
+      <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
 };
@@ -286,7 +292,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
- 
+
   image: {
     width: 100,
     height: 100,

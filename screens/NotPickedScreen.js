@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
@@ -18,6 +18,18 @@ const PickedScreen = ({ route }) => {
       .catch(error => console.error(`Error fetching pickup sellers for ${driverName}:`, error));
   }, [driverName]);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    axios.get(`${BACKEND_URL}/api/drivers/${driverName}/not-picked`)
+      .then(response => {
+        setSellers(response.data.sellers);
+      })
+      .catch(error => console.error(`Error fetching pickup sellers for ${driverName}:`, error));
+    setRefreshing(false);
+  };
+
   const handleSellerPress = (sellerName) => {
     const endpoint = '/api/not-picked-products';  // Adjust this endpoint as needed
     navigation.navigate('ProductDetails', {
@@ -32,9 +44,10 @@ const PickedScreen = ({ route }) => {
       <FlatList
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.tile} 
+          <TouchableOpacity
+            style={styles.tile}
             onPress={() => handleSellerPress(item.sellerName)}
           >
             <Text style={styles.sellerName}>

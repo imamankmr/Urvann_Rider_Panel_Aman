@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
@@ -16,7 +16,7 @@ const PickupScreen = ({ route }) => {
       .then(response => {
         const { sellers, lockStatus } = response.data;
         setSellers(sellers);
-        
+
         // Update the lock status based on the response
         if (lockStatus === 'close') {
           setIsLocked(true); // Set locked state if lockStatus is 'close'
@@ -26,6 +26,26 @@ const PickupScreen = ({ route }) => {
       })
       .catch(error => console.error(`Error fetching pickup sellers for ${driverName}:`, error));
   }, [driverName]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    axios.get(`${BACKEND_URL}/api/driver/${driverName}/pickup-sellers`)
+      .then(response => {
+        const { sellers, lockStatus } = response.data;
+        setSellers(sellers);
+
+        // Update the lock status based on the response
+        if (lockStatus === 'close') {
+          setIsLocked(true); // Set locked state if lockStatus is 'close'
+        } else {
+          setIsLocked(false); // Set unlocked state otherwise
+        }
+      })
+      .catch(error => console.error(`Error fetching pickup sellers for ${driverName}:`, error));
+    setRefreshing(false);
+  };
 
   const handleSellerPress = (sellerName) => {
     if (!isLocked) { // Only allow navigation if screen is not locked
@@ -55,9 +75,10 @@ const PickupScreen = ({ route }) => {
       <FlatList
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.tile} 
+          <TouchableOpacity
+            style={styles.tile}
             onPress={() => handleSellerPress(item.sellerName)}
             disabled={isLocked} // Disable if screen is locked
           >
@@ -70,8 +91,8 @@ const PickupScreen = ({ route }) => {
           </TouchableOpacity>
         )}
       />
-      <TouchableOpacity 
-        style={styles.lockButton} 
+      <TouchableOpacity
+        style={styles.lockButton}
         onPress={handleLockPress}
         disabled={isLocked} // Disable button if already locked
       >
