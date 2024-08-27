@@ -437,16 +437,17 @@ const pickupProducts = async (req, res) => {
     const { seller_name, rider_code } = req.query;
 
     try {
+        // Update the query to include Pickup_Status: 'Picked'
         let query = {
-            seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
-            "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
+            seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },  // Case-insensitive regex for exact match
+            "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },  // Case-insensitive regex for exact match
+            Pickup_Status: 'Picked',  // Add condition for Pickup_Status being 'Picked'
             $or: [
-
                 { metafield_order_type: 'Replacement' },
-                { metafield_order_type: { $eq: null } }, // Adding null condition
-                { metafield_order_type: { $eq: '' } }    // Adding empty string condition
+                { metafield_order_type: { $eq: null } },  // Match null metafield_order_type
+                { metafield_order_type: { $eq: '' } }  // Match empty string metafield_order_type
             ]
-        };
+        }
 
         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
 
@@ -485,15 +486,15 @@ const pickedProducts = async (req, res) => {
     try {
         // Update the query to include Pickup_Status: 'Picked'
         let query = {
-            seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
-            "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
-            Pickup_Status: 'Picked',  // Add condition for Pickup_Status being 'Picked'
+            seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },  // Case-insensitive regex for exact match
+            "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },  // Case-insensitive regex for exact match
+            Pickup_Status: 'Not Picked',  // Add condition for Pickup_Status being 'Picked'
             $or: [
                 { metafield_order_type: 'Replacement' },
-                { metafield_order_type: { $eq: null } },
-                { metafield_order_type: { $eq: '' } }
+                { metafield_order_type: { $eq: null } },  // Match null metafield_order_type
+                { metafield_order_type: { $eq: '' } }  // Match empty string metafield_order_type
             ]
-        };
+        }
 
         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
 
