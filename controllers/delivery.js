@@ -140,36 +140,37 @@ const deliveryProductDetails = async (req, res) => {
         }
 
         // Fetch route details based on query parameters
-        const routeDetails = await Route.findOne({
+        const routeDetails = await Route.find({
             FINAL: order_code,
             // metafield_order_type: metafield_order_type
         });
 
         //console.log('Route details:', routeDetails);
 
-        if (!routeDetails) {
+        if (!routeDetails || routeDetails.length === 0) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
         // Fetch product details based on SKU from routeDetails
-        const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
+        const productDetailsArray = await Promise.all(routeDetails.map(async (routeDetail) => {
+            const productDetails = await Photo.findOne({ sku: routeDetail.line_item_sku });
 
-        //console.log('Product details:', productDetails);
+            //console.log('Product details:', productDetails);
 
-        if (!productDetails) {
-            return res.status(404).json({ message: 'Product not found' });
-        }
+            if (!productDetails) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
 
-        // Send response with product details
-        const response = {
-            line_item_sku: routeDetails.line_item_sku,
-            line_item_name: routeDetails.line_item_name,
-            image1: productDetails.image_url || null,
-            total_item_quantity: routeDetails.total_item_quantity,
-            pickup_status: routeDetails.Pickup_Status,
-        };
+            return {
+                line_item_sku: routeDetail.line_item_sku,
+                line_item_name: routeDetail.line_item_name,
+                image1: productDetails.image_url || null,
+                total_item_quantity: routeDetail.total_item_quantity,
+                pickup_status: routeDetail.Pickup_Status
+            };
+        }));
 
-        res.json(response);
+        res.json(productDetailsArray);
     } catch (error) {
         console.error('Error fetching product details:', error);
         res.status(500).json({ message: 'Server error' });
@@ -196,8 +197,8 @@ const updateDeliveryStatus = async (req, res) => {
             },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
-        
-        console.log('Update Result:', result);        
+
+        console.log('Update Result:', result);
 
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update');

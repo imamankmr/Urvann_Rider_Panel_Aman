@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
 
 const ProductDetailsScreen = ({ route }) => {
-  const [product, setProduct] = useState(null);
+  const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,7 +21,7 @@ const ProductDetailsScreen = ({ route }) => {
             metafield_order_type: metafield_order_type,
           },
         });
-        setProduct(response.data);
+        setProducts(response.data);
         setLoading(false);
       } catch (err) {
         setError('Error fetching product details');
@@ -46,8 +46,8 @@ const ProductDetailsScreen = ({ route }) => {
         <Text style={styles.backButtonText}>← Back</Text>
       </TouchableOpacity>
 
-      {product && (
-        <View style={styles.productContainer}>
+      {products && products.length > 0 && products.map((product) => (
+        <View style={styles.productContainer} key={product.line_item_name + "-" + product.line_item_sku}>
           <Image source={{ uri: product.image1 }} style={styles.image} />
           <View style={styles.textContainer}>
             <Text style={styles.text}>
@@ -66,7 +66,7 @@ const ProductDetailsScreen = ({ route }) => {
             </Text>
           </View>
         </View>
-      )}
+      ))}
     </ScrollView>
   );
 };
