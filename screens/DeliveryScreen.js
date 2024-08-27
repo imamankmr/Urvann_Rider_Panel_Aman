@@ -661,7 +661,7 @@ const rtoStyles = StyleSheet.create({
   infoContainer: {
     flex: 1,
     paddingRight: 35,
-    maxWidth: 320,
+    maxWidth: 282,
   },
   orderCodeContainer: {
     flexDirection: 'row',
