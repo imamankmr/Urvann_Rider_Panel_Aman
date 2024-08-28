@@ -125,9 +125,9 @@ const ProductDetailsScreen = ({ route }) => {
       }
       return product;
     });
-
+  
     setProducts(updatedProducts);
-
+  
     try {
       const productToUpdate = updatedProducts.find(product => product.line_item_sku === sku && product.FINAL === orderCode);
       if (!productToUpdate) {
@@ -140,18 +140,18 @@ const ProductDetailsScreen = ({ route }) => {
         orderCode,
         status: newStatus
       });
-
+  
       await savePickupStatusLocally(sku, orderCode, newStatus);
-
+  
       const allPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Picked");
       const allNotPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Picked");
-
+  
       setSelectAll(prev => ({ ...prev, [orderCode]: allPicked ? true : allNotPicked ? false : false }));
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
   };
-
+  
   const renderProducts = useCallback(() => {
     const groupedProducts = {};
     products.forEach(product => {

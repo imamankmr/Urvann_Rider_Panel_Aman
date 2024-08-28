@@ -97,6 +97,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
         finalCode,
         status: newStatus
       });
+
       const updatedProducts = products.map(product =>
         product.FINAL === finalCode ? { ...product, "Delivery Status": newStatus } : product
       );
@@ -351,3 +352,4 @@ const styles = StyleSheet.create({
 });
 
 export default ReverseProductDetailsScreen;
+
