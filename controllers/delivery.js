@@ -170,6 +170,17 @@ const deliveryProductDetails = async (req, res) => {
             };
         }));
 
+        // sort the productDetailsArray by pickup_status - Not Picked first and then Picked
+        productDetailsArray.sort((a, b) => {
+            if (a.pickup_status === 'Not Picked' && b.pickup_status === 'Picked') {
+                return 1;
+            } else if (a.pickup_status === 'Picked' && b.pickup_status === 'Not Picked') {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+
         res.json(productDetailsArray);
     } catch (error) {
         console.error('Error fetching product details:', error);

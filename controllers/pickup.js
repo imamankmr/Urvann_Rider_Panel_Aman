@@ -208,17 +208,18 @@ const NotDeliveredSellers = async (req, res) => {
         // Find distinct sellers with the correct filters
         const sellers = await Route.find({
             'Driver Name': driverName,
+            'Delivery_Status': 'Not Delivered',
             $or: [
                 // Special case for 'Delivery Failed'
                 {
                     metafield_order_type: 'Delivery Failed',
-                    'Delivery_Status': 'Not Delivered'
+                    
                 },
+                { metafield_delivery_status: 'Delivery failed'},
                 // Existing logic for 'Replacement' and 'Reverse Pickup'
                 {
                     metafield_order_type: { $in: ['Replacement', 'Reverse Pickup'] },
                     metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] },
-                    'Delivery_Status': 'Not Delivered'
                 }
             ]
         }).distinct('seller_name');
@@ -236,6 +237,7 @@ const NotDeliveredSellers = async (req, res) => {
                                 metafield_order_type: 'Delivery Failed',
                                 'Delivery_Status': 'Not Delivered'
                             },
+                            { metafield_delivery_status: 'Delivery failed'},
                             // Existing logic for 'Replacement' and 'Reverse Pickup'
                             {
                                 metafield_order_type: { $in: ['Replacement', 'Reverse Pickup'] },
@@ -275,17 +277,18 @@ const deliveredSellers = async (req, res) => {
         // Find distinct sellers with the correct filters
         const sellers = await Route.find({
             'Driver Name': driverName,
+            'Delivery_Status': 'Delivered',
             $or: [
                 // Special case for 'Delivery Failed'
                 {
                     metafield_order_type: 'Delivery Failed',
-                    'Delivery_Status': 'Delivered'
+                    
                 },
+                { metafield_delivery_status: 'Delivery failed'},
                 // Existing logic for 'Replacement' and 'Reverse Pickup'
                 {
                     metafield_order_type: { $in: ['Replacement', 'Reverse Pickup'] },
                     metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] },
-                    'Delivery_Status': 'Delivered'
                 }
             ]
         }).distinct('seller_name');
@@ -297,17 +300,17 @@ const deliveredSellers = async (req, res) => {
                     $match: {
                         'Driver Name': driverName,
                         seller_name: sellerName,
+                        'Delivery_Status': 'Delivered',
                         $or: [
                             // Special case for 'Delivery Failed'
                             {
-                                metafield_order_type: 'Delivery Failed',
-                                'Delivery_Status': 'Delivered'
+                                metafield_order_type: 'Delivery Failed',                               
                             },
+                            { metafield_delivery_status: 'Delivery failed'},
                             // Existing logic for 'Replacement' and 'Reverse Pickup'
                             {
                                 metafield_order_type: { $in: ['Replacement', 'Reverse Pickup'] },
                                 metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] },
-                                'Delivery_Status': 'Delivered'
                             }
                         ]
                     }
@@ -628,16 +631,19 @@ const reverseDeliveredProducts = async (req, res) => {
             seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
             "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
             Delivery_Status: 'Delivered', // Additional filter for 'Not Delivered' status
-            metafield_delivery_status: { 
-                $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] 
-            }, // This condition must always be true
             $or: [
-                { metafield_order_type: 'Reverse Pickup' },
-                { metafield_order_type: 'Replacement' },
-                { metafield_order_type: 'Delivery Failed' }
+                // If metafield_order_type is 'Delivery Failed', include the product
+                { metafield_order_type: 'Delivery Failed' },
+                { metafield_delivery_status: 'Delivery failed'},
+                // Otherwise, check the other conditions
+                {
+                    metafield_order_type: { $in: ['Reverse Pickup', 'Replacement'] },
+                    metafield_delivery_status: { 
+                        $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] 
+                    }
+                }
             ]
         };
-
         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status Delivery_Status').lean();
 
         const skuList = filteredData.map(data => data.line_item_sku);
@@ -677,13 +683,17 @@ const reverseNotDeliveredProducts = async (req, res) => {
             seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
             "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
             Delivery_Status: 'Not Delivered', // Additional filter for 'Not Delivered' status
-            metafield_delivery_status: { 
-                $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] 
-            }, // This condition must always be true
             $or: [
-                { metafield_order_type: 'Reverse Pickup' },
-                { metafield_order_type: 'Replacement' },
-                { metafield_order_type: 'Delivery Failed' }
+                // If metafield_order_type is 'Delivery Failed', include the product
+                { metafield_order_type: 'Delivery Failed' },
+                { metafield_delivery_status: 'Delivery failed'},
+                // Otherwise, check the other conditions
+                {
+                    metafield_order_type: { $in: ['Reverse Pickup', 'Replacement'] },
+                    metafield_delivery_status: { 
+                        $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] 
+                    }
+                }
             ]
         };
 
@@ -717,6 +727,7 @@ const reverseNotDeliveredProducts = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 
 const updatePickupStatus = async (req, res) => {
