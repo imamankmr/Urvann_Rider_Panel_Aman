@@ -491,7 +491,7 @@ const pickedProducts = async (req, res) => {
         let query = {
             seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },  // Case-insensitive regex for exact match
             "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },  // Case-insensitive regex for exact match
-            Pickup_Status: 'Not Picked',  // Add condition for Pickup_Status being 'Picked'
+            Pickup_Status: 'Picked',  // Add condition for Pickup_Status being 'Picked'
             $or: [
                 { metafield_order_type: 'Replacement' },
                 { metafield_order_type: { $eq: null } },  // Match null metafield_order_type
