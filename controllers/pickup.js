@@ -27,50 +27,50 @@ const Photo = require('../models/photo');
 //     }
 // }
 
-const pickupSellers = async (req, res) => {
-    const { driverName } = req.params;
+// const pickupSellers = async (req, res) => {
+//     const { driverName } = req.params;
     
   
-    try {
-      // Find the lock status for the given driver
-      const driverData = await Route.findOne({ 'Driver Name': driverName }, 'Lock_Status');
-      const lockStatus = driverData ? driverData.Lock_Status : 'open'; // Default to 'open' if not found
+//     try {
+//       // Find the lock status for the given driver
+//       const driverData = await Route.findOne({ 'Driver Name': driverName }, 'Lock_Status');
+//       const lockStatus = driverData ? driverData.Lock_Status : 'open'; // Default to 'open' if not found
   
-      const sellers = await Route.find({
-        'Driver Name': driverName,
-        $or: [
-          { metafield_order_type: { $in: ['Replacement'] } },
-          { metafield_order_type: { $eq: null } },
-          { metafield_order_type: { $eq: '' } }     // Add condition for empty string
-        ]
-      }).distinct('seller_name');
+//       const sellers = await Route.find({
+//         'Driver Name': driverName,
+//         $or: [
+//           { metafield_order_type: { $in: ['Replacement'] } },
+//           { metafield_order_type: { $eq: null } },
+//           { metafield_order_type: { $eq: '' } }     // Add condition for empty string
+//         ]
+//       }).distinct('seller_name');
   
-      const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
-        const productCount = await Route.aggregate([
-          { $match: { 
-            'Driver Name': driverName, 
-            seller_name: sellerName, 
-            $or: [
-              { metafield_order_type: { $in: ['Replacement'] } },
-              { metafield_order_type: { $eq: null } },
-              { metafield_order_type: { $eq: '' } }
-            ]
-          } },
-          { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
-        ]);
-        return {
-          sellerName,
-          productCount: productCount[0] ? productCount[0].totalQuantity : 0
-        };
-      }));
+//       const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
+//         const productCount = await Route.aggregate([
+//           { $match: { 
+//             'Driver Name': driverName, 
+//             seller_name: sellerName, 
+//             $or: [
+//               { metafield_order_type: { $in: ['Replacement'] } },
+//               { metafield_order_type: { $eq: null } },
+//               { metafield_order_type: { $eq: '' } }
+//             ]
+//           } },
+//           { $group: { _id: null, totalQuantity: { $sum: '$total_item_quantity' } } }
+//         ]);
+//         return {
+//           sellerName,
+//           productCount: productCount[0] ? productCount[0].totalQuantity : 0
+//         };
+//       }));
   
      
-      res.json({ sellers: sellersWithCounts, lockStatus });
-    } catch (error) {
-      console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-}
+//       res.json({ sellers: sellersWithCounts, lockStatus });
+//     } catch (error) {
+//       console.error(`Error fetching pickup seller names and counts for ${driverName}:`, error);
+//       res.status(500).json({ message: 'Internal server error' });
+//     }
+// }
 
 const pickedSellers = async (req, res) => {
     const { driverName } = req.params;
@@ -351,47 +351,47 @@ const pickupLockScreen = async (req, res) => {
     }
 };
 
-const reversePickupSellers = async (req, res) => {
-    const { driverName } = req.params;
-   // console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
+// const reversePickupSellers = async (req, res) => {
+//     const { driverName } = req.params;
+//    // console.log(`Fetching reverse pickup sellers for driver: ${driverName}`);
 
-    try {
-        const sellers = await Route.find({
-            'Driver Name': driverName,
-            metafield_order_type: { $in: ['Delivery Failed', 'Replacement', 'Reverse Pickup'] },
-            metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }
-        }).distinct('seller_name');
+//     try {
+//         const sellers = await Route.find({
+//             'Driver Name': driverName,
+//             metafield_order_type: { $in: ['Delivery Failed', 'Replacement', 'Reverse Pickup'] },
+//             metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }
+//         }).distinct('seller_name');
 
-        const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
-            const productCount = await Route.aggregate([
-                {
-                    $match: {
-                        'Driver Name': driverName,
-                        seller_name: sellerName,
-                        metafield_order_type: { $in: ['Delivery Failed', 'Replacement', 'Reverse Pickup'] },
-                        metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalQuantity: { $sum: '$total_item_quantity' }
-                    }
-                }
-            ]);
-            return {
-                sellerName,
-                productCount: productCount[0] ? productCount[0].totalQuantity : 0
-            };
-        }));
+//         const sellersWithCounts = await Promise.all(sellers.map(async (sellerName) => {
+//             const productCount = await Route.aggregate([
+//                 {
+//                     $match: {
+//                         'Driver Name': driverName,
+//                         seller_name: sellerName,
+//                         metafield_order_type: { $in: ['Delivery Failed', 'Replacement', 'Reverse Pickup'] },
+//                         metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }
+//                     }
+//                 },
+//                 {
+//                     $group: {
+//                         _id: null,
+//                         totalQuantity: { $sum: '$total_item_quantity' }
+//                     }
+//                 }
+//             ]);
+//             return {
+//                 sellerName,
+//                 productCount: productCount[0] ? productCount[0].totalQuantity : 0
+//             };
+//         }));
 
-       // console.log('Reverse pickup sellers with counts:', sellersWithCounts);
-        res.json(sellersWithCounts);
-    } catch (error) {
-        console.error(`Error fetching reverse pickup seller names and counts for ${driverName}:`, error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-}
+//        // console.log('Reverse pickup sellers with counts:', sellersWithCounts);
+//         res.json(sellersWithCounts);
+//     } catch (error) {
+//         console.error(`Error fetching reverse pickup seller names and counts for ${driverName}:`, error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// }
 
 // const products = async (req, res) => {
 //     const { seller_name, rider_code } = req.query;
@@ -433,52 +433,52 @@ const reversePickupSellers = async (req, res) => {
 //     }
 // }
 
-const pickupProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.query;
+// const pickupProducts = async (req, res) => {
+//     const { seller_name, rider_code } = req.query;
 
-    try {
-        // Update the query to include Pickup_Status: 'Picked'
-        let query = {
-            seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },  // Case-insensitive regex for exact match
-            "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },  // Case-insensitive regex for exact match
-            Pickup_Status: 'Picked',  // Add condition for Pickup_Status being 'Picked'
-            $or: [
-                { metafield_order_type: 'Replacement' },
-                { metafield_order_type: { $eq: null } },  // Match null metafield_order_type
-                { metafield_order_type: { $eq: '' } }  // Match empty string metafield_order_type
-            ]
-        }
+//     try {
+//         // Update the query to include Pickup_Status: 'Picked'
+//         let query = {
+//             seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },  // Case-insensitive regex for exact match
+//             "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },  // Case-insensitive regex for exact match
+//             Pickup_Status: 'Picked',  // Add condition for Pickup_Status being 'Picked'
+//             $or: [
+//                 { metafield_order_type: 'Replacement' },
+//                 { metafield_order_type: { $eq: null } },  // Match null metafield_order_type
+//                 { metafield_order_type: { $eq: '' } }  // Match empty string metafield_order_type
+//             ]
+//         }
 
-        const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
+//         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
 
-        const skuList = filteredData.map(data => data.line_item_sku);
-        const photos = await Photo.find({ sku: { $in: skuList } }).lean();
+//         const skuList = filteredData.map(data => data.line_item_sku);
+//         const photos = await Photo.find({ sku: { $in: skuList } }).lean();
 
-        const photoMap = {};
-        photos.forEach(photo => {
-            photoMap[photo.sku] = photo.image_url;
-        });
+//         const photoMap = {};
+//         photos.forEach(photo => {
+//             photoMap[photo.sku] = photo.image_url;
+//         });
 
-        const products = filteredData.map(data => ({
-            FINAL: data.FINAL,
-            line_item_sku: data.line_item_sku,
-            line_item_name: data.line_item_name,
-            image1: photoMap[data.line_item_sku] || null,
-            total_item_quantity: data.total_item_quantity,
-            "Pickup Status": data.Pickup_Status
-        }));
+//         const products = filteredData.map(data => ({
+//             FINAL: data.FINAL,
+//             line_item_sku: data.line_item_sku,
+//             line_item_name: data.line_item_name,
+//             image1: photoMap[data.line_item_sku] || null,
+//             total_item_quantity: data.total_item_quantity,
+//             "Pickup Status": data.Pickup_Status
+//         }));
 
-        const orderCodeQuantities = products.reduce((acc, product) => {
-            acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
-            return acc;
-        }, {});
+//         const orderCodeQuantities = products.reduce((acc, product) => {
+//             acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
+//             return acc;
+//         }, {});
 
-        res.json({ orderCodeQuantities, products });
-    } catch (error) {
-        console.error('Error fetching pickup products:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-}
+//         res.json({ orderCodeQuantities, products });
+//     } catch (error) {
+//         console.error('Error fetching pickup products:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// }
 
 const pickedProducts = async (req, res) => {
     const { seller_name, rider_code } = req.query;
@@ -574,51 +574,51 @@ const NotPickedProducts = async (req, res) => {
     }
 }
 
-const reversePickupProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.query;
+// const reversePickupProducts = async (req, res) => {
+//     const { seller_name, rider_code } = req.query;
 
-    try {
-        let query = {
-            seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
-            "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
-            $or: [
-                { metafield_order_type: 'Reverse Pickup' },
-                { metafield_order_type: 'Replacement' },
-                { metafield_order_type: 'Delivery Failed' },
-                {metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }}
-            ]
-        };
+//     try {
+//         let query = {
+//             seller_name: { $regex: new RegExp(`^${seller_name}$`, 'i') },
+//             "Driver Name": { $regex: new RegExp(`^${rider_code}$`, 'i') },
+//             $or: [
+//                 { metafield_order_type: 'Reverse Pickup' },
+//                 { metafield_order_type: 'Replacement' },
+//                 { metafield_order_type: 'Delivery Failed' },
+//                 {metafield_delivery_status: { $in: ['Replacement Pickup Successful', 'Reverse Pickup Successful'] }}
+//             ]
+//         };
 
-        const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
+//         const filteredData = await Route.find(query).select('FINAL line_item_sku line_item_name total_item_quantity Pickup_Status').lean();
 
-        const skuList = filteredData.map(data => data.line_item_sku);
-        const photos = await Photo.find({ sku: { $in: skuList } }).lean();
+//         const skuList = filteredData.map(data => data.line_item_sku);
+//         const photos = await Photo.find({ sku: { $in: skuList } }).lean();
 
-        const photoMap = {};
-        photos.forEach(photo => {
-            photoMap[photo.sku] = photo.image_url;
-        });
+//         const photoMap = {};
+//         photos.forEach(photo => {
+//             photoMap[photo.sku] = photo.image_url;
+//         });
 
-        const products = filteredData.map(data => ({
-            FINAL: data.FINAL,
-            line_item_sku: data.line_item_sku,
-            line_item_name: data.line_item_name,
-            image1: photoMap[data.line_item_sku] || null,
-            total_item_quantity: data.total_item_quantity,
-            "Delivery Status": data.Delivery_Status
-        }));
+//         const products = filteredData.map(data => ({
+//             FINAL: data.FINAL,
+//             line_item_sku: data.line_item_sku,
+//             line_item_name: data.line_item_name,
+//             image1: photoMap[data.line_item_sku] || null,
+//             total_item_quantity: data.total_item_quantity,
+//             "Delivery Status": data.Delivery_Status
+//         }));
 
-        const orderCodeQuantities = products.reduce((acc, product) => {
-            acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
-            return acc;
-        }, {});
+//         const orderCodeQuantities = products.reduce((acc, product) => {
+//             acc[product.FINAL] = (acc[product.FINAL] || 0) + product.total_item_quantity;
+//             return acc;
+//         }, {});
 
-        res.json({ orderCodeQuantities, products });
-    } catch (error) {
-        console.error('Error fetching reverse pickup products:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-}
+//         res.json({ orderCodeQuantities, products });
+//     } catch (error) {
+//         console.error('Error fetching reverse pickup products:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// }
 
 const reverseDeliveredProducts = async (req, res) => {
     const { seller_name, rider_code } = req.query;
@@ -809,16 +809,16 @@ const updateReturnsDeliveryStatusBulk = async (req, res) => {
 
 module.exports = {
     // sellers,
-    pickupSellers,
-    reversePickupSellers,
+    // pickupSellers,
+    // reversePickupSellers,
     pickupLockScreen,
     pickedSellers,
     NotPickedSellers,
     NotDeliveredSellers,
     deliveredSellers,
     // products,
-    pickupProducts,
-    reversePickupProducts,
+    // pickupProducts,
+    // reversePickupProducts,
     NotPickedProducts,
     reverseDeliveredProducts,
     reverseNotDeliveredProducts,

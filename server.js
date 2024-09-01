@@ -26,20 +26,20 @@ app.post('/api/login', user.loginUser);
 
 // GET /api/driver/:driverName/sellers
 // app.get('/api/driver/:driverName/sellers', pickup.sellers);
-app.get('/api/driver/:driverName/pickup-sellers', pickup.pickupSellers);
+// app.get('/api/driver/:driverName/pickup-sellers', pickup.pickupSellers);
 app.get('/api/drivers/:driverName/picked', pickup.pickedSellers);
 app.get('/api/drivers/:driverName/not-picked', pickup.NotPickedSellers);
 app.get('/api/drivers/:driverName/delivered', pickup.deliveredSellers);
 app.get('/api/drivers/:driverName/not-delivered', pickup.NotDeliveredSellers);
 app.post('/api/driver/:driverName/lock-pickup', pickup.pickupLockScreen);
-app.get('/api/driver/:driverName/reverse-pickup-sellers', pickup.reversePickupSellers);
+// app.get('/api/driver/:driverName/reverse-pickup-sellers', pickup.reversePickupSellers);
 
 // GET /api/products
 // app.get('/api/products', pickup.products);
-app.get('/api/pickup-products', pickup.pickupProducts);
+// app.get('/api/pickup-products', pickup.pickupProducts);
 app.get('/api/picked-products', pickup.pickedProducts);
 app.get('/api/not-picked-products', pickup.NotPickedProducts);
-app.get('/api/reverse-pickup-products', pickup.reversePickupProducts);
+// app.get('/api/reverse-pickup-products', pickup.reversePickupProducts);
 app.get('/api/reverse-delivered-products', pickup.reverseDeliveredProducts);
 app.get('/api/reverse-not-delivered-products', pickup.reverseNotDeliveredProducts);
 
