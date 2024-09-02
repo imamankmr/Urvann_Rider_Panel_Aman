@@ -1,5 +1,8 @@
-const Route = require('../models/route');
+const { routeConnection } = require('../middlewares/connectToDB');
 const Photo = require('../models/photo');
+const Route = require('../models/route');
+const RouteSchema = require('../models/route');  // Import the route schema
+
 
 // const customers = async (req, res) => {
 //     try {
@@ -45,7 +48,25 @@ const Photo = require('../models/photo');
 const customers = async (req, res) => {
     try {
         const { driverName } = req.params;
+        const collections = await routeConnection.db.listCollections().toArray();
+        let matchingCollectionName;
 
+        // Check each collection for the seller's name
+        for (const collection of collections) {
+        const currentCollection = routeConnection.collection(collection.name);
+        const foundSeller = await currentCollection.findOne({ 'Driver Name': { $regex: new RegExp(`^${driverName}$`, 'i') } });
+        if (foundSeller) {
+            matchingCollectionName = collection.name;
+            break;
+        }
+        }
+
+        if (!matchingCollectionName) {
+        return res.status(404).json({ message: 'Seller not found in any collection' });
+        }
+
+        // Dynamically set the collection for the Route model
+        const Route = routeConnection.model('Route', require('../models/route').schema, matchingCollectionName);
         // Define the filter conditions for Delivery_Status
         const filterConditions = [
             { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
@@ -126,6 +147,26 @@ const customers = async (req, res) => {
 
 const deliveryProductDetails = async (req, res) => {
     try {
+        const { driverName } = req.params;
+        const collections = await routeConnection.db.listCollections().toArray();
+        let matchingCollectionName;
+
+        // Check each collection for the seller's name
+        for (const collection of collections) {
+        const currentCollection = routeConnection.collection(collection.name);
+        const foundSeller = await currentCollection.findOne({ 'Driver Name': { $regex: new RegExp(`^${driverName}$`, 'i') } });
+        if (foundSeller) {
+            matchingCollectionName = collection.name;
+            break;
+        }
+        }
+
+        if (!matchingCollectionName) {
+        return res.status(404).json({ message: 'Seller not found in any collection' });
+        }
+
+        // Dynamically set the collection for the Route model
+        const Route = routeConnection.model('Route', require('../models/route').schema, matchingCollectionName);
         // Extract query parameters
         const { order_code, /* metafield_order_type */ } = req.query;
         // console.log('Received query parameters:', req.query);
@@ -191,8 +232,29 @@ const deliveryProductDetails = async (req, res) => {
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
     const { deliveryStatus } = req.body;
+    const { driverName } = req.params;
 
     try {
+        const collections = await routeConnection.db.listCollections().toArray();
+        let matchingCollectionName;
+
+        // Check each collection for the seller's name
+        for (const collection of collections) {
+        const currentCollection = routeConnection.collection(collection.name);
+        const foundSeller = await currentCollection.findOne({ 'Driver Name': { $regex: new RegExp(`^${driverName}$`, 'i') } });
+        if (foundSeller) {
+            matchingCollectionName = collection.name;
+            break;
+        }
+        }
+
+        if (!matchingCollectionName) {
+        return res.status(404).json({ message: 'Seller not found in any collection' });
+        }
+
+        // Dynamically set the collection for the Route model
+        const Route = routeConnection.model('Route', require('../models/route').schema, matchingCollectionName);
+       
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
 
         console.log(lockedStatuses);
