@@ -231,8 +231,7 @@ const deliveryProductDetails = async (req, res) => {
 
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
-    const { deliveryStatus } = req.body;
-    const { driverName } = req.params;
+    const { deliveryStatus, driverName} = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();

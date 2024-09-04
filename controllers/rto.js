@@ -163,7 +163,7 @@ const rtoProductDetails = async (req, res) => {
 
 const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params; // Use parameters directly
-    const { deliveryStatus } = req.body;
+    const { deliveryStatus, driverName } = req.body;
 
     console.log("Received parameters:", { customerName, orderType, deliveryStatus });
 
