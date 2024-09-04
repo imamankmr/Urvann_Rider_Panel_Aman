@@ -581,7 +581,7 @@ const pickupLockScreen = async (req, res) => {
 // }
 
 const pickedProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.query;
+    const { seller_name, rider_code } = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
@@ -647,7 +647,7 @@ const pickedProducts = async (req, res) => {
 }
 
 const NotPickedProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.query;
+    const { seller_name, rider_code } = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
@@ -759,7 +759,7 @@ const NotPickedProducts = async (req, res) => {
 // }
 
 const reverseDeliveredProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.query;
+    const { seller_name, rider_code } = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
@@ -830,7 +830,7 @@ const reverseDeliveredProducts = async (req, res) => {
 };
 
 const reverseNotDeliveredProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.query;
+    const { seller_name, rider_code } = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
