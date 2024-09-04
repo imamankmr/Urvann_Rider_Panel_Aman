@@ -173,7 +173,6 @@ const updateRTOStatus = async (req, res) => {
     }
 
     try {
-        const { driverName } = req.params;
         const collections = await routeConnection.db.listCollections().toArray();
         let matchingCollectionName;
 

@@ -904,7 +904,7 @@ const reverseNotDeliveredProducts = async (req, res) => {
 
 
 const updatePickupStatus = async (req, res) => {
-    const { sku, orderCode, status } = req.body;
+    const { sku, orderCode, driverName, status } = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
@@ -947,7 +947,7 @@ const updatePickupStatus = async (req, res) => {
 }
 
 const updateReturnsDeliveryStatus = async (req, res) => {
-    const { sku, orderCode, status } = req.body;
+    const { sku, orderCode, driverName, status } = req.body;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
