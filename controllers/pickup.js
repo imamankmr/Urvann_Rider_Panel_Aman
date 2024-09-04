@@ -581,7 +581,7 @@ const pickupLockScreen = async (req, res) => {
 // }
 
 const pickedProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.body;
+    const { seller_name, rider_code } = req.query;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
@@ -647,7 +647,7 @@ const pickedProducts = async (req, res) => {
 }
 
 const NotPickedProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.body;
+    const { seller_name, rider_code } = req.query;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
