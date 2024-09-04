@@ -759,7 +759,7 @@ const NotPickedProducts = async (req, res) => {
 // }
 
 const reverseDeliveredProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.body;
+    const { seller_name, rider_code } = req.query;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
@@ -830,7 +830,7 @@ const reverseDeliveredProducts = async (req, res) => {
 };
 
 const reverseNotDeliveredProducts = async (req, res) => {
-    const { seller_name, rider_code } = req.body;
+    const { seller_name, rider_code } = req.query;
 
     try {
         const collections = await routeConnection.db.listCollections().toArray();
