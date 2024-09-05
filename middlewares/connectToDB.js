@@ -7,14 +7,14 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.error(err));
 
 // MongoDB connection URI for UrvannHubRouteData database
-const MONGODB_URI_ROUTE = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannHubRouteData?retryWrites=true&w=majority&appName=UrvannGenie';
+// const MONGODB_URI_ROUTE = 'mongodb+srv://sambhav:UrvannGenie01@urvanngenie.u7r4o.mongodb.net/UrvannHubRouteData?retryWrites=true&w=majority&appName=UrvannGenie';
 
-// Create a separate connection for the UrvannHubRouteData database
-const routeConnection = mongoose.createConnection(MONGODB_URI_ROUTE);
+// // Create a separate connection for the UrvannHubRouteData database
+// const routeConnection = mongoose.createConnection(MONGODB_URI_ROUTE);
 
-routeConnection.on('connected', () => {
-  console.log('MongoDB connected to UrvannHubRouteData');
-});
+// routeConnection.on('connected', () => {
+//   console.log('MongoDB connected to UrvannHubRouteData');
+// });
 
 routeConnection.on('error', (err) => {
   console.error(err);
@@ -22,5 +22,5 @@ routeConnection.on('error', (err) => {
 
 module.exports = {
   mongoose,        // Export the default connection for UrvannRiderApp
-  routeConnection  // Export the separate connection for UrvannHubRouteData
+  // routeConnection  // Export the separate connection for UrvannHubRouteData
 };
