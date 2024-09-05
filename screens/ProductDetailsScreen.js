@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BACKEND_URL } from 'react-native-dotenv';
 import { RefreshControl } from 'react-native';
 
 const ProductDetailsScreen = ({ route }) => {
@@ -13,9 +15,28 @@ const ProductDetailsScreen = ({ route }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectAll, setSelectAll] = useState({});
 
+  // Function to save pickup status locally
+  const savePickupStatusLocally = async (sku, orderCode, status) => {
+    try {
+      await AsyncStorage.setItem(`${sku}_${orderCode}`, status);
+    } catch (error) {
+      console.error('Error saving pickup status:', error);
+    }
+  };
+
+  // Function to load pickup status locally
+  const loadPickupStatusLocally = async (sku, orderCode) => {
+    try {
+      const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
+      return status || "Not Picked";
+    } catch (error) {
+      console.error('Error loading pickup status:', error);
+      return "Not Picked";
+    }
+  };
+
   const fetchProducts = async () => {
     try {
-      console.log('Fetching products from API...');
       const response = await axios.get(`${BACKEND_URL}${endpoint}`, {
         params: {
           seller_name: sellerName,
@@ -23,12 +44,16 @@ const ProductDetailsScreen = ({ route }) => {
         }
       });
 
-      console.log('Products fetched from API:', response.data.products);
+      const fetchedProducts = await Promise.all(response.data.products.map(async product => {
+        const localStatus = await loadPickupStatusLocally(product.line_item_sku, product.FINAL);
+        return {
+          ...product,
+          "Pickup Status": localStatus
+        };
+      }));
 
-      const fetchedProducts = response.data.products;
       setProducts(fetchedProducts);
       setOrderCodeQuantities(response.data.orderCodeQuantities);
-      console.log('Fetched products with statuses from API:', fetchedProducts);
 
       // Initialize selectAll based on the fetched products' status
       const initialSelectAll = {};
@@ -41,8 +66,6 @@ const ProductDetailsScreen = ({ route }) => {
         }
       });
       setSelectAll(initialSelectAll);
-      console.log('Initial selectAll state:', initialSelectAll);
-
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -51,44 +74,43 @@ const ProductDetailsScreen = ({ route }) => {
   };
 
   useEffect(() => {
-    console.log('Component mounted, fetching products...');
     fetchProducts();
   }, [sellerName, driverName]);
 
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
-    console.log('Refreshing product list...');
     setRefreshing(true);
     await fetchProducts();
     setRefreshing(false);
   };
 
   const handleImagePress = (product) => {
-    console.log('Image pressed:', product.line_item_sku);
     setSelectedProduct(product);
     setModalVisible(true);
   };
 
   const toggleSelectAll = async (finalCode) => {
-    console.log(`Toggling select all for order code: ${finalCode}`);
     const newStatus = !selectAll[finalCode] ? "Picked" : "Not Picked";
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
 
     try {
-      console.log(`Sending bulk update request to API for order code: ${finalCode}, Status: ${newStatus}`);
       await axios.post(`${BACKEND_URL}/api/update-pickup-status-bulk`, {
         sellerName,
         driverName,
         finalCode,
         status: newStatus
       });
-
       const updatedProducts = products.map(product =>
         product.FINAL === finalCode ? { ...product, "Pickup Status": newStatus } : product
       );
       setProducts(updatedProducts);
-      console.log('Updated products after bulk update:', updatedProducts);
+
+      await Promise.all(updatedProducts.map(async product => {
+        if (product.FINAL === finalCode) {
+          await savePickupStatusLocally(product.line_item_sku, finalCode, newStatus);
+        }
+      }));
 
     } catch (error) {
       console.error('Error updating pickup status in bulk:', error);
@@ -96,19 +118,16 @@ const ProductDetailsScreen = ({ route }) => {
   };
 
   const toggleProductStatus = async (sku, orderCode) => {
-    console.log(`Toggling status for product: SKU = ${sku}, Order Code = ${orderCode}`);
     const updatedProducts = products.map(product => {
       if (product.line_item_sku === sku && product.FINAL === orderCode) {
         const newStatus = product["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
-        console.log(`Product ${sku} new status: ${newStatus}`);
         return { ...product, "Pickup Status": newStatus };
       }
       return product;
     });
-
+  
     setProducts(updatedProducts);
-    console.log('Products after toggling status:', updatedProducts);
-
+  
     try {
       const productToUpdate = updatedProducts.find(product => product.line_item_sku === sku && product.FINAL === orderCode);
       if (!productToUpdate) {
@@ -116,24 +135,23 @@ const ProductDetailsScreen = ({ route }) => {
         return;
       }
       const newStatus = productToUpdate["Pickup Status"];
-      console.log(`Sending update request to API for product: SKU = ${sku}, Order Code = ${orderCode}, Status = ${newStatus}`);
       await axios.post(`${BACKEND_URL}/api/update-pickup-status`, {
         sku,
-        driverName,
         orderCode,
         status: newStatus
       });
-
+  
+      await savePickupStatusLocally(sku, orderCode, newStatus);
+  
       const allPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Picked");
       const allNotPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Picked");
-
-      console.log(`All picked: ${allPicked}, All not picked: ${allNotPicked}`);
+  
       setSelectAll(prev => ({ ...prev, [orderCode]: allPicked ? true : allNotPicked ? false : false }));
     } catch (error) {
       console.error('Error updating pickup status:', error);
     }
   };
-
+  
   const renderProducts = useCallback(() => {
     const groupedProducts = {};
     products.forEach(product => {
@@ -145,7 +163,6 @@ const ProductDetailsScreen = ({ route }) => {
 
     const sortedFinalCodes = Object.keys(groupedProducts).sort((a, b) => a.localeCompare(b));
 
-    console.log('Rendering products...');
     return sortedFinalCodes.map(finalCode => (
       <ScrollView
         key={finalCode}
@@ -178,39 +195,43 @@ const ProductDetailsScreen = ({ route }) => {
         ))}
       </ScrollView>
     ));
-  }, [products, orderCodeQuantities, refreshing, selectAll]);
+  }, [products, orderCodeQuantities, selectAll]);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        <Swiper showsPagination={false} loop={false}>
-          {renderProducts()}
-        </Swiper>
-      )}
-      <Modal visible={modalVisible} transparent={true}>
-        <View style={styles.modalContainer}>
+      <Swiper style={styles.wrapper} showsButtons loop={false}>
+        {renderProducts()}
+      </Swiper>
+
+      {selectedProduct && (
+        <Modal
+          visible={modalVisible}
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
           <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-            <View style={styles.modalBackdrop} />
-          </TouchableWithoutFeedback>
-          <View style={styles.modalContent}>
-            {selectedProduct && (
-              <View>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Image source={{ uri: selectedProduct.image1 }} style={styles.fullScreenImage} />
                 <Text style={styles.modalText}>SKU: {selectedProduct.line_item_sku}</Text>
                 <Text style={styles.modalText}>Name: {selectedProduct.line_item_name}</Text>
-                <Text style={styles.modalText}>Price: {selectedProduct.line_item_price}</Text>
                 <Text style={styles.modalText}>Quantity: {selectedProduct.total_item_quantity}</Text>
-                <Image source={{ uri: selectedProduct.image1 }} style={styles.modalImage} />
               </View>
-            )}
-          </View>
-        </View>
-      </Modal>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
