@@ -2,8 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BACKEND_URL } from 'react-native-dotenv';
 import { RefreshControl } from 'react-native';
 
 const ProductDetailsScreen = ({ route }) => {
@@ -14,28 +12,6 @@ const ProductDetailsScreen = ({ route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectAll, setSelectAll] = useState({});
-
-  // Function to save pickup status locally
-  const savePickupStatusLocally = async (sku, orderCode, status) => {
-    try {
-      console.log(`Saving status locally: SKU = ${sku}, Order Code = ${orderCode}, Status = ${status}`);
-      await AsyncStorage.setItem(`${sku}_${orderCode}`, status);
-    } catch (error) {
-      console.error('Error saving pickup status:', error);
-    }
-  };
-
-  // Function to load pickup status locally
-  const loadPickupStatusLocally = async (sku, orderCode) => {
-    try {
-      const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
-      console.log(`Loaded status locally: SKU = ${sku}, Order Code = ${orderCode}, Status = ${status || "Not Picked"}`);
-      return status || "Not Picked";
-    } catch (error) {
-      console.error('Error loading pickup status:', error);
-      return "Not Picked";
-    }
-  };
 
   const fetchProducts = async () => {
     try {
@@ -49,18 +25,10 @@ const ProductDetailsScreen = ({ route }) => {
 
       console.log('Products fetched from API:', response.data.products);
 
-      const fetchedProducts = await Promise.all(response.data.products.map(async product => {
-        const localStatus = await loadPickupStatusLocally(product.line_item_sku, product.FINAL);
-        console.log(`Product SKU: ${product.line_item_sku}, Order Code: ${product.FINAL}, Local Status: ${localStatus}`);
-        return {
-          ...product,
-          "Pickup Status": localStatus
-        };
-      }));
-
+      const fetchedProducts = response.data.products;
       setProducts(fetchedProducts);
       setOrderCodeQuantities(response.data.orderCodeQuantities);
-      console.log('Fetched products with local statuses:', fetchedProducts);
+      console.log('Fetched products with statuses from API:', fetchedProducts);
 
       // Initialize selectAll based on the fetched products' status
       const initialSelectAll = {};
@@ -122,12 +90,6 @@ const ProductDetailsScreen = ({ route }) => {
       setProducts(updatedProducts);
       console.log('Updated products after bulk update:', updatedProducts);
 
-      await Promise.all(updatedProducts.map(async product => {
-        if (product.FINAL === finalCode) {
-          await savePickupStatusLocally(product.line_item_sku, finalCode, newStatus);
-        }
-      }));
-
     } catch (error) {
       console.error('Error updating pickup status in bulk:', error);
     }
@@ -157,11 +119,10 @@ const ProductDetailsScreen = ({ route }) => {
       console.log(`Sending update request to API for product: SKU = ${sku}, Order Code = ${orderCode}, Status = ${newStatus}`);
       await axios.post(`${BACKEND_URL}/api/update-pickup-status`, {
         sku,
+        driverName,
         orderCode,
         status: newStatus
       });
-
-      await savePickupStatusLocally(sku, orderCode, newStatus);
 
       const allPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Picked");
       const allNotPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Picked");
@@ -208,9 +169,9 @@ const ProductDetailsScreen = ({ route }) => {
                 <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
                 <Text style={styles.text}>Name: {product.line_item_name}</Text>
                 <Text style={styles.text}>Quantity: {product.total_item_quantity}</Text>
-                <Text style={[styles.statusText, product["Pickup Status"] === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+                {/* <Text style={[styles.statusText, product["Pickup Status"] === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
                   {product["Pickup Status"]}
-                </Text>
+                </Text> */}
               </View>
             </View>
           </TouchableWithoutFeedback>

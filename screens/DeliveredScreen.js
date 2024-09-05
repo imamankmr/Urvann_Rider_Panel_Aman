@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
 
-const NotDeliveredScreen = ({ route }) => {
+const DeliveredScreen = ({ route }) => {
   const [sellers, setSellers] = useState([]);
   const navigation = useNavigation();
   const { driverName } = route.params; // Extract driverName from route params
@@ -98,4 +98,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NotDeliveredScreen;
+export default DeliveredScreen;

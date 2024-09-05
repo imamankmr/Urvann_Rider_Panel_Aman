@@ -192,10 +192,11 @@ const DeliveryScreen = ({ route }) => {
     });
   };
 
-  const updateDeliveryStatus = async (name, deliveryStatus) => {
+  const updateDeliveryStatus = async (customerName, deliveryStatus, driverName) => {
     try {
-      const response = await axios.put(`${BACKEND_URL}/api/update-delivery-status/${name}`, {
-        deliveryStatus
+      const response = await axios.put(`${BACKEND_URL}/api/update-delivery-status/${customerName}`, {
+        deliveryStatus,
+        driverName
       });
 
       if (response.status === 200) {
@@ -224,12 +225,13 @@ const DeliveryScreen = ({ route }) => {
     }
   };
 
-  const updateRtoStatus = async (name, orderType, deliveryStatus) => {
+  const updateRtoStatus = async (customerName, orderType, deliveryStatus, driverName) => {
     try {
       //console.log("Updating Rto Status with", { name, orderType, deliveryStatus });
 
-      const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${name}/${orderType}`, {
-        deliveryStatus
+      const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${customerName}/${orderType}`, {
+        deliveryStatus,
+        driverName
       });
 
       if (response.status === 200) {
@@ -278,7 +280,7 @@ const DeliveryScreen = ({ route }) => {
           {
             text: 'Yes',
             onPress: async () => {
-              const result = await updateDeliveryStatus(name, value);
+              const result = await updateDeliveryStatus(name, value, driverName);
               if (result.success) {
                 setDeliveryStatuses(prev => {
                   const updatedStatuses = { ...prev, [id]: value };
@@ -326,7 +328,7 @@ const DeliveryScreen = ({ route }) => {
           {
             text: 'Yes',
             onPress: async () => {
-              const result = await updateRtoStatus(name, orderType, value);
+              const result = await updateRtoStatus(name, orderType, value, driverName);
               if (result.success) {
                 setRtoStatuses(prev => ({
                   ...prev,
