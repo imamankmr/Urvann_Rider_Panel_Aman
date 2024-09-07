@@ -45,17 +45,16 @@ const customers = async (req, res) => {
     try {
         const { driverName } = req.params;
 
-        // Define the filter conditions for orders
-        const filterConditions = {
-            'Driver Name': driverName,
-            $or: [
-                { 'metafield_order_type': { $exists: false } }, // Orders where metafield_order_type doesn't exist (normal orders)
-                { 'metafield_order_type': '' },                // Orders where metafield_order_type is an empty string (normal orders)
-                { 'metafield_order_type': 'Replacement' }       // Replacement orders
-            ]
-        };
+        // Define the filter conditions for Delivery_Status
+        const filterConditions = [
+            { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
+            { 'metafield_order_type': 'Replacement' }
+        ];
 
-        const routes = await Route.find(filterConditions);
+        const routes = await Route.find({
+            'Driver Name': driverName,
+            $or: filterConditions
+        });
 
         if (routes.length === 0) {
             return res.status(404).json({ message: 'No customers found for this driver' });
@@ -65,44 +64,34 @@ const customers = async (req, res) => {
         const customerMap = new Map();
 
         routes.forEach(route => {
-            const customerName = route.shipping_address_full_name;
-
-            if (!customerMap.has(customerName)) {
-                customerMap.set(customerName, {
+            if (!customerMap.has(route.shipping_address_full_name)) {
+                customerMap.set(route.shipping_address_full_name, {
                     _id: route._id, // Include _id
                     order_code: route.FINAL,
                     items: route.Items,
                     address: route.shipping_address_address,
                     total_quantity: route.total_item_quantity, // Initialize with current quantity
                     phone: route.shipping_address_phone,
-                    metafield_delivery_status: route.metafield_delivery_status || '', // Initialize status
-                    replacement_orders: route.metafield_order_type === 'Replacement' ? route.total_item_quantity : 0 // Handle replacement quantity
+                    metafield_delivery_status: route.metafield_delivery_status || '' // Fetch the status
                 });
             } else {
                 // Aggregate quantity for the existing customer
-                const existing = customerMap.get(customerName);
+                const existing = customerMap.get(route.shipping_address_full_name);
                 existing.total_quantity += route.total_item_quantity;
-
-                // Add replacement order quantity if this is a replacement
-                if (route.metafield_order_type === 'Replacement') {
-                    existing.replacement_orders += route.total_item_quantity;
-                }
-
-                customerMap.set(customerName, existing);
+                customerMap.set(route.shipping_address_full_name, existing);
             }
         });
 
         // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_delivery_status, replacement_orders }]) => ({
+        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_delivery_status }]) => ({
             _id,
-            name, // This will be the name of the customer
+            name,         // This will be the name of the customer
             order_code,
             items,
             address,
             total_quantity,
             phone,
             metafield_delivery_status, // Include status in response
-            replacement_orders // Include aggregated replacement order quantity
         }));
 
         res.json({ customers }); // Return the customers with aggregated quantity and status
@@ -110,8 +99,7 @@ const customers = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
-};
-
+}
 
 
 // const updateDeliveryStatus = async (req, res) => {
