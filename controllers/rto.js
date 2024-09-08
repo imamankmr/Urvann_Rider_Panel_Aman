@@ -73,50 +73,56 @@ const rtoProductDetails = async (req, res) => {
         // Extract query parameters
         const { order_code, metafield_order_type } = req.query;
 
-        // Log parameters for debugging
-        //console.log('Received query parameters:', req.query);
-
         // Check if parameters are missing
         if (!order_code || !metafield_order_type) {
-            //console.log('Missing query parameters');
             return res.status(400).json({ message: 'Missing required query parameters' });
         }
 
-        // Fetch route details based on query parameters
-        const routeDetails = await Route.findOne({
+        // Fetch all route details based on query parameters
+        const routeDetailsList = await Route.find({
             FINAL: order_code,
             metafield_order_type: metafield_order_type
         });
 
-        //console.log('Route details:', routeDetails);
-
-        if (!routeDetails) {
+        if (!routeDetailsList || routeDetailsList.length === 0) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // Fetch product details based on SKU from routeDetails
-        const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
+        // Initialize an array to hold all product details
+        const productDetailsList = [];
 
-        //console.log('Product details:', productDetails);
+        // Fetch product details for each route entry
+        for (const routeDetails of routeDetailsList) {
+            const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
 
-        if (!productDetails) {
-            return res.status(404).json({ message: 'Product not found' });
+            if (productDetails) {
+                // Add the relevant details to the response list
+                productDetailsList.push({
+                    line_item_sku: routeDetails.line_item_sku,
+                    line_item_name: routeDetails.line_item_name,
+                    image1: productDetails.image_url || null,
+                    total_item_quantity: routeDetails.total_item_quantity
+                });
+            } else {
+                // If product not found, you can choose to skip it or return an error message
+                productDetailsList.push({
+                    line_item_sku: routeDetails.line_item_sku,
+                    line_item_name: routeDetails.line_item_name,
+                    image1: null,
+                    total_item_quantity: routeDetails.total_item_quantity,
+                    error: 'Product not found'
+                });
+            }
         }
 
-        // Send response with product details
-        const response = {
-            line_item_sku: routeDetails.line_item_sku,
-            line_item_name: routeDetails.line_item_name,
-            image1: productDetails.image_url || null,
-            total_item_quantity: routeDetails.total_item_quantity
-        };
-
-        res.json(response);
+        // Send response with all product details
+        res.json(productDetailsList);
     } catch (error) {
         console.error('Error fetching product details:', error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
+
 
 const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params; // Use parameters directly
