@@ -1,5 +1,5 @@
 const Route = require('../models/route');
-
+const Photo = require('../models/photo');
 // const customers = async (req, res) => {
 //     try {
 //         const { driverName } = req.params;
@@ -101,6 +101,59 @@ const customers = async (req, res) => {
     }
 }
 
+const deliveryProductDetails = async (req, res) => {
+    try {
+        // Extract query parameters
+        const { order_code, /* metafield_order_type */ } = req.query;
+        // console.log('Received query parameters:', req.query);
+
+        // Log parameters for debugging
+        //console.log('Received query parameters:', req.query);
+
+        // Check if parameters are missing
+        if (!order_code /*|| !metafield_order_type*/) {
+            //console.log('Missing query parameters');
+            return res.status(400).json({ message: 'Missing required query parameters' });
+        }
+
+        // Fetch route details based on query parameters
+        const routeDetails = await Route.find({
+            FINAL: order_code,
+            // metafield_order_type: metafield_order_type
+        });
+
+        //console.log('Route details:', routeDetails);
+
+        if (!routeDetails || routeDetails.length === 0) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Fetch product details based on SKU from routeDetails
+        const productDetailsArray = await Promise.all(routeDetails.map(async (routeDetail) => {
+            const productDetails = await Photo.findOne({ sku: routeDetail.line_item_sku });
+
+            //console.log('Product details:', productDetails);
+
+            if (!productDetails) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
+
+            return {
+                line_item_sku: routeDetail.line_item_sku,
+                line_item_name: routeDetail.line_item_name,
+                image1: productDetails.image_url || null,
+                total_item_quantity: routeDetail.total_item_quantity,
+                pickup_status: routeDetail.Pickup_Status
+            };
+        }));
+
+        res.json(productDetailsArray);
+    } catch (error) {
+        console.error('Error fetching product details:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}
+
 
 // const updateDeliveryStatus = async (req, res) => {
 //     const { customerName } = req.params;
@@ -159,5 +212,6 @@ const updateDeliveryStatus = async (req, res) => {
 
 module.exports = {
     customers,
-    updateDeliveryStatus
+    updateDeliveryStatus,
+    deliveryProductDetails,
 }
