@@ -130,7 +130,7 @@ const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params; // Use parameters directly
     const { deliveryStatus } = req.body;
 
-    console.log("Received parameters:", { customerName, orderType, deliveryStatus });
+    //console.log("Received parameters:", { customerName, orderType, deliveryStatus });
 
     if (!deliveryStatus) {
         console.warn('Delivery status is undefined or null');

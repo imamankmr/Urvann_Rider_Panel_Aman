@@ -192,7 +192,7 @@ const updateDeliveryStatus = async (req, res) => {
     try {
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
 
-        console.log(lockedStatuses);
+        //console.log(lockedStatuses);
 
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
@@ -206,7 +206,7 @@ const updateDeliveryStatus = async (req, res) => {
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
         
-        console.log('Update Result:', result);        
+        //console.log('Update Result:', result);        
 
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update');
