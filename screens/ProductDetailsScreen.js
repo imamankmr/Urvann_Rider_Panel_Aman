@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from 'react-native-dotenv';
 
 const ProductDetailsScreen = ({ route }) => {
@@ -13,26 +12,7 @@ const ProductDetailsScreen = ({ route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectAll, setSelectAll] = useState({});
-
-  // Function to save pickup status locally
-  const savePickupStatusLocally = async (sku, orderCode, status) => {
-    try {
-      await AsyncStorage.setItem(`${sku}_${orderCode}`, status);
-    } catch (error) {
-      console.error('Error saving pickup status:', error);
-    }
-  };
-
-  // Function to load pickup status locally
-  const loadPickupStatusLocally = async (sku, orderCode) => {
-    try {
-      const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
-      return status || "Not Picked";
-    } catch (error) {
-      console.error('Error loading pickup status:', error);
-      return "Not Picked";
-    }
-  };
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -43,21 +23,23 @@ const ProductDetailsScreen = ({ route }) => {
             rider_code: driverName
           }
         });
-        
-        const fetchedProducts = await Promise.all(response.data.products.map(async product => {
-          const localStatus = await loadPickupStatusLocally(product.line_item_sku, product.FINAL);
-          return {
-            ...product,
-            "Pickup Status": localStatus
-          };
-        }));
 
-        setProducts(fetchedProducts);
-        setOrderCodeQuantities(response.data.orderCodeQuantities);
+        const { products, orderCodeQuantities, lockStatus } = response.data;
 
-        // Initialize selectAll based on the fetched products' status
+        if (lockStatus === undefined) {
+          console.error('Error: lockStatus is undefined');
+          return;
+        }
+
+        const isLocked = lockStatus.trim() === 'close';
+        console.log('isLocked:', isLocked);
+
+        setProducts(products);
+        setOrderCodeQuantities(orderCodeQuantities);
+        setIsLocked(isLocked);
+
         const initialSelectAll = {};
-        fetchedProducts.forEach(product => {
+        products.forEach(product => {
           if (!initialSelectAll[product.FINAL]) {
             initialSelectAll[product.FINAL] = true;
           }
@@ -74,7 +56,7 @@ const ProductDetailsScreen = ({ route }) => {
     };
 
     fetchProducts();
-  }, [sellerName, driverName]);
+  }, [sellerName, driverName, endpoint]);
 
   const handleImagePress = (product) => {
     setSelectedProduct(product);
@@ -82,33 +64,37 @@ const ProductDetailsScreen = ({ route }) => {
   };
 
   const toggleSelectAll = async (finalCode) => {
+    if (isLocked) return; // Prevent changes if locked
+  
     const newStatus = !selectAll[finalCode] ? "Picked" : "Not Picked";
     setSelectAll(prev => ({ ...prev, [finalCode]: !prev[finalCode] }));
-  
+    
     try {
-      await axios.post(`${BACKEND_URL}/api/update-pickup-status-bulk`, {
+      const response = await axios.post(`${BACKEND_URL}/api/update-pickup-status-bulk`, {
         sellerName,
         driverName,
         finalCode,
         status: newStatus
       });
+  
+      if (response.status === 403) {
+        console.error('Pickup status cannot be updated. The routes are locked for this driver.');
+        alert('Pickup status cannot be updated as the driver\'s routes are locked.');
+        return;
+      }
+  
       const updatedProducts = products.map(product =>
         product.FINAL === finalCode ? { ...product, "Pickup Status": newStatus } : product
       );
       setProducts(updatedProducts);
-  
-      await Promise.all(updatedProducts.map(async product => {
-        if (product.FINAL === finalCode) {
-          await savePickupStatusLocally(product.line_item_sku, finalCode, newStatus);
-        }
-      }));
-  
     } catch (error) {
       console.error('Error updating pickup status in bulk:', error);
     }
   };
 
   const toggleProductStatus = async (sku, orderCode) => {
+    if (isLocked) return; // Prevent changes if locked
+  
     const updatedProducts = products.map(product => {
       if (product.line_item_sku === sku && product.FINAL === orderCode) {
         const newStatus = product["Pickup Status"] === "Not Picked" ? "Picked" : "Not Picked";
@@ -125,14 +111,19 @@ const ProductDetailsScreen = ({ route }) => {
         console.error(`Product with SKU ${sku} and order code ${orderCode} not found.`);
         return;
       }
+  
       const newStatus = productToUpdate["Pickup Status"];
-      await axios.post(`${BACKEND_URL}/api/update-pickup-status`, {
+      const response = await axios.post(`${BACKEND_URL}/api/update-pickup-status`, {
         sku,
         orderCode,
         status: newStatus
       });
   
-      await savePickupStatusLocally(sku, orderCode, newStatus);
+      if (response.status === 403) {
+        console.error('Pickup status cannot be updated. The routes are locked for this driver.');
+        alert('Pickup status cannot be updated as the driver\'s routes are locked.');
+        return;
+      }
   
       const allPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Picked");
       const allNotPicked = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Pickup Status"] === "Not Picked");
@@ -151,29 +142,47 @@ const ProductDetailsScreen = ({ route }) => {
       }
       groupedProducts[product['FINAL']].push(product);
     });
-
+  
     const sortedFinalCodes = Object.keys(groupedProducts).sort((a, b) => a.localeCompare(b));
-
+  
     return sortedFinalCodes.map(finalCode => (
       <ScrollView key={finalCode} contentContainerStyle={styles.scrollViewContainer}>
         <View style={styles.orderContainer}>
           <Text style={styles.header}>Order Code: {finalCode}</Text>
           <Text style={styles.subHeader}>Total Quantity: {orderCodeQuantities[finalCode]}</Text>
         </View>
-        <TouchableOpacity onPress={() => toggleSelectAll(finalCode)} style={styles.selectAllContainer}>
+        <TouchableOpacity 
+          onPress={() => !isLocked && toggleSelectAll(finalCode)} // Disable if locked
+          style={[styles.selectAllContainer, isLocked ? styles.locked : {}]} // Style changes when locked
+          disabled={isLocked} // Disable if locked
+        >
           <Text style={styles.selectAllText}>{selectAll[finalCode] ? "Unselect All" : "Select All"}</Text>
         </TouchableOpacity>
         {groupedProducts[finalCode].map((product, index) => (
-          <TouchableWithoutFeedback key={index} onPress={() => toggleProductStatus(product.line_item_sku, finalCode)}>
+          <TouchableWithoutFeedback 
+            key={index}
+            onPress={() => !isLocked && toggleProductStatus(product.line_item_sku, finalCode)} // Disable if locked
+          >
             <View style={[styles.productContainer, product["Pickup Status"] === "Picked" ? styles.picked : styles.notPicked]}>
               <TouchableOpacity onPress={() => handleImagePress(product)}>
                 <Image source={{ uri: product.image1 }} style={styles.image} />
               </TouchableOpacity>
               <View style={styles.textContainer}>
-                <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
-                <Text style={styles.text}>Name: {product.line_item_name}</Text>
-                <Text style={styles.text}>Quantity: {product.total_item_quantity}</Text>
-                <Text style={[styles.statusText, product["Pickup Status"] === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+                <Text style={styles.text}>
+                  <Text style={styles.boldText}>SKU: </Text>{product.line_item_sku}
+                </Text>
+                <Text style={styles.text}>
+                  <Text style={styles.boldText}>Name: </Text>{product.line_item_name}
+                </Text>
+                <Text style={styles.text}>
+                  <Text style={styles.boldText}>Quantity: </Text>{product.total_item_quantity}
+                </Text>
+                <Text
+                  style={[
+                    styles.statusText,
+                    product["Pickup Status"] === "Picked" ? styles.pickedStatus : styles.notPickedStatus,
+                  ]}
+                >
                   {product["Pickup Status"]}
                 </Text>
               </View>
@@ -182,7 +191,7 @@ const ProductDetailsScreen = ({ route }) => {
         ))}
       </ScrollView>
     ));
-  }, [products, orderCodeQuantities, selectAll]);
+  }, [products, orderCodeQuantities, selectAll, isLocked]); // Include isLocked in dependencies  
 
   if (loading) {
     return (
@@ -223,22 +232,22 @@ const ProductDetailsScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f4f8',
     paddingTop: 20,
   },
+  wrapper: {},
   scrollViewContainer: {
-    paddingBottom: 20,
-    // paddingTop: 10,
-    backgroundColor: '#fff',
+    flexGrow: 1,
+    backgroundColor: '#f0f4f8',
   },
   orderContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#ffffff', // Consistent color for orderContainer
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 10,
     width: '90%',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
     padding: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -261,20 +270,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   header: {
-    fontSize: 20,
+    fontSize: 18, // Slightly smaller font size for headers
     fontWeight: 'bold',
     textAlign: 'center',
   },
   subHeader: {
-    fontSize: 20,
+    fontSize: 18, // Slightly smaller font size for sub-headers
     color: '#555',
     textAlign: 'center',
   },
   productContainer: {
     flexDirection: 'row',
-    marginBottom: 15,
-    backgroundColor: '#ffffff',
-    padding: 15,
+    marginBottom: 10, // Reduce margin to make it more compact
+    backgroundColor: '#ffffff', // Consistent color for productContainer
+    padding: 12, // Reduce padding for a smaller container
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 10,
@@ -285,26 +294,29 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
- 
   image: {
-    width: 100,
+    width: 100, // Reduce the size of the image
     height: 100,
     resizeMode: 'cover',
-    marginRight: 15,
+    marginRight: 8,
     borderRadius: 10,
+    backgroundColor: '#ffffff', // Same background color for image container
   },
   textContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   text: {
-    fontSize: 16,
-    marginBottom: 1,
+    fontSize: 14, // Smaller font size
+    marginBottom: 1, // Reduced spacing between text elements
+  },
+  boldText: {
+    fontWeight: 'bold', // Only bold for the label text
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 14, // Smaller font size for status text
     fontWeight: 'bold',
-    marginTop: 5,
+    marginTop: 1, // Reduced margin to bring status text closer to quantity
   },
   pickedStatus: {
     color: '#28a745',
@@ -329,12 +341,12 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 10,
     marginBottom: 20,
+    backgroundColor: '#ffffff', // Consistent color for fullScreenImage
   },
   modalText: {
     fontSize: 18,
     marginBottom: 10,
   },
-
   picked: {
     backgroundColor: '#d4edda',
   },
@@ -342,5 +354,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
 });
+
 
 export default ProductDetailsScreen;

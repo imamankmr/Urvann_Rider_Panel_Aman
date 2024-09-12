@@ -104,55 +104,64 @@ const customers = async (req, res) => {
 const deliveryProductDetails = async (req, res) => {
     try {
         // Extract query parameters
-        const { order_code, /* metafield_order_type */ } = req.query;
-        // console.log('Received query parameters:', req.query);
+        const { order_code, metafield_order_type } = req.query;
 
-        // Log parameters for debugging
-        //console.log('Received query parameters:', req.query);
-
-        // Check if parameters are missing
-        if (!order_code /*|| !metafield_order_type*/) {
-            //console.log('Missing query parameters');
-            return res.status(400).json({ message: 'Missing required query parameters' });
+        // Check if the required parameter 'order_code' is missing
+        if (!order_code) {
+            return res.status(400).json({ message: 'Missing required query parameter: order_code' });
         }
 
-        // Fetch route details based on query parameters
-        const routeDetails = await Route.find({
-            FINAL: order_code,
-            // metafield_order_type: metafield_order_type
-        });
+        // Construct the query object, making metafield_order_type optional
+        const query = { FINAL: order_code };
+        if (metafield_order_type) {
+            query.metafield_order_type = metafield_order_type;
+        }
 
-        //console.log('Route details:', routeDetails);
+        // Fetch all route details based on the query parameters
+        const routeDetailsList = await Route.find(query);
 
-        if (!routeDetails || routeDetails.length === 0) {
+        if (!routeDetailsList || routeDetailsList.length === 0) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // Fetch product details based on SKU from routeDetails
-        const productDetailsArray = await Promise.all(routeDetails.map(async (routeDetail) => {
-            const productDetails = await Photo.findOne({ sku: routeDetail.line_item_sku });
+        // Initialize an array to hold all product details
+        const productDetailsList = [];
 
-            //console.log('Product details:', productDetails);
+        // Fetch product details for each route entry
+        for (const routeDetails of routeDetailsList) {
+            const productDetails = await Photo.findOne({ sku: routeDetails.line_item_sku });
 
-            if (!productDetails) {
-                return res.status(404).json({ message: 'Product not found' });
+            if (productDetails) {
+                // Add the relevant details, including the pickup_status, to the response list
+                productDetailsList.push({
+                    line_item_sku: routeDetails.line_item_sku,
+                    line_item_name: routeDetails.line_item_name,
+                    image1: productDetails.image_url || null,
+                    total_item_quantity: routeDetails.total_item_quantity,
+                    pickup_status: routeDetails.Pickup_Status 
+                });
+            } else {
+                // If product not found, add an entry with an error message
+                productDetailsList.push({
+                    line_item_sku: routeDetails.line_item_sku,
+                    line_item_name: routeDetails.line_item_name,
+                    image1: null,
+                    total_item_quantity: routeDetails.total_item_quantity,
+                    pickup_status: routeDetails.Pickup_Status,
+                    error: 'Product not found'
+                });
             }
+        }
 
-            return {
-                line_item_sku: routeDetail.line_item_sku,
-                line_item_name: routeDetail.line_item_name,
-                image1: productDetails.image_url || null,
-                total_item_quantity: routeDetail.total_item_quantity,
-                pickup_status: routeDetail.Pickup_Status
-            };
-        }));
-
-        res.json(productDetailsArray);
+        // Send response with all product details
+        res.json(productDetailsList);
     } catch (error) {
         console.error('Error fetching product details:', error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
+
+
 
 
 // const updateDeliveryStatus = async (req, res) => {
@@ -186,7 +195,7 @@ const updateDeliveryStatus = async (req, res) => {
         console.log(lockedStatuses);
 
         if (lockedStatuses.length > 0) {
-            return res.status(401).send('Cannot update delivery status while there are open locks');
+            return res.status(401).send('Please submit pickup before proceeding');
         }
 
         const result = await Route.updateMany(

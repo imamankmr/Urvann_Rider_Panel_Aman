@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
@@ -23,25 +23,45 @@ const PickedScreen = ({ route }) => {
         } else {
           setIsLocked(false); // Set unlocked state otherwise
         }
+        console.log('isLocked:', isLocked);
       })
       .catch(error => console.error(`Error fetching pickup sellers for ${driverName}:`, error));
   }, [driverName]);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    axios.get(`${BACKEND_URL}/api/drivers/${driverName}/picked`)
+      .then(response => {
+        const { sellers, lockStatus } = response.data;
+        setSellers(sellers);
+        
+        // Update the lock status based on the response
+        if (lockStatus === 'close') {
+          setIsLocked(true); // Set locked state if lockStatus is 'close'
+        } else {
+          setIsLocked(false); // Set unlocked state otherwise
+        }
+      })
+      .catch(error => console.error(`Error fetching pickup sellers for ${driverName}:`, error));
+    setRefreshing(false);
+  };
+
   const handleSellerPress = (sellerName) => {
-    if (!isLocked) { // Only allow navigation if screen is not locked
-      const endpoint = '/api/picked-products';  // Adjust this endpoint as needed
-      navigation.navigate('ProductDetails', {
-        driverName,
-        sellerName,
-        endpoint
-      });
-    }
+    // Allow navigation even if locked
+    const endpoint = '/api/picked-products';  // Adjust this endpoint as needed
+    navigation.navigate('ProductDetails', {
+      driverName,
+      sellerName,
+      endpoint
+    });
   };
 
   const handleLockPress = () => {
     axios.post(`${BACKEND_URL}/api/driver/${driverName}/lock-pickup`)
       .then(response => {
-        setIsLocked(true); // Update the button text to "Locked"
+        setIsLocked(true); // Update the button text to "Completed"
         Alert.alert('Success', 'Pickup screen submitted successfully');
       })
       .catch(error => {
@@ -55,11 +75,12 @@ const PickedScreen = ({ route }) => {
       <FlatList
         data={sellers}
         keyExtractor={(item, index) => index.toString()}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.tile} 
             onPress={() => handleSellerPress(item.sellerName)}
-            disabled={isLocked} // Disable if screen is locked
+            // No need to disable list even when locked
           >
             <Text style={styles.sellerName}>
               {item.sellerName}
@@ -86,15 +107,15 @@ const PickedScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
-    paddingHorizontal: 15,
-    paddingTop: 20,
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 12,
+    paddingTop: 10,
   },
   tile: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 15,
+    padding: 12,
     marginVertical: 8,
     backgroundColor: '#fff',
     borderColor: '#ddd',
@@ -104,7 +125,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    elevation: 3, // For Android shadow
+    elevation: 3,
   },
   sellerName: {
     fontSize: 16,
@@ -112,8 +133,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   productCount: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    //fontWeight: 'bold',
+    color: '#333',
+    marginRight: 10,
   },
   lockButton: {
     position: 'absolute',

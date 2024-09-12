@@ -101,7 +101,8 @@ const rtoProductDetails = async (req, res) => {
                     line_item_sku: routeDetails.line_item_sku,
                     line_item_name: routeDetails.line_item_name,
                     image1: productDetails.image_url || null,
-                    total_item_quantity: routeDetails.total_item_quantity
+                    total_item_quantity: routeDetails.total_item_quantity,
+                    delivery_status: routeDetails.Delivery_Status
                 });
             } else {
                 // If product not found, you can choose to skip it or return an error message
@@ -110,6 +111,7 @@ const rtoProductDetails = async (req, res) => {
                     line_item_name: routeDetails.line_item_name,
                     image1: null,
                     total_item_quantity: routeDetails.total_item_quantity,
+                    delivery_status: routeDetails.Delivery_Status,
                     error: 'Product not found'
                 });
             }
@@ -140,7 +142,7 @@ const updateRTOStatus = async (req, res) => {
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
 
         if (lockedStatuses.length > 0) {
-            return res.status(401).send('Cannot update delivery status while there are open locks');
+            return res.status(401).send('Please submit pickup before proceeding');
         }
 
         // Update RTO status

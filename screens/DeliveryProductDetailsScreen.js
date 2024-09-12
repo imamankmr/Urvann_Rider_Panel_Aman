@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
 
 const ProductDetailsScreen = ({ route }) => {
@@ -11,7 +10,6 @@ const ProductDetailsScreen = ({ route }) => {
   const [refreshing, setRefreshing] = useState(false);
 
   const { order_code, metafield_order_type } = route.params;
-  const navigation = useNavigation();
 
   const fetchProductDetails = async () => {
     try {
@@ -52,10 +50,6 @@ const ProductDetailsScreen = ({ route }) => {
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
     >
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>← Back</Text>
-      </TouchableOpacity>
-
       {products && products.length > 0 && products.map((product) => (
         <View style={styles.productContainer} key={product.line_item_name + "-" + product.line_item_sku}>
           <Image source={{ uri: product.image1 }} style={styles.image} />
@@ -69,10 +63,9 @@ const ProductDetailsScreen = ({ route }) => {
             <Text style={styles.text}>
               <Text style={styles.label}>Quantity: </Text>{product.total_item_quantity}
             </Text>
-            <Text style={styles.text}>
-              <Text style={[styles.label, product.pickup_status === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
-                {product.pickup_status}
-              </Text>
+            {/* Displaying pickup status without label */}
+            <Text style={[styles.text, product.pickup_status === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+              {product.pickup_status}
             </Text>
           </View>
         </View>
@@ -87,27 +80,15 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#f8f8f8',
   },
-  backButton: {
-    marginBottom: 16,
-    padding: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: '#287238',
-    borderRadius: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
   productContainer: {
     flexDirection: 'row',
     marginBottom: 15,
     backgroundColor: '#ffffff',
-    padding: 10,
+    padding: 12,
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 10,
-    width: '90%',
+    width: '100%',
     alignSelf: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -126,7 +107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontSize: 16,
+    fontSize: 14,
   },
   label: {
     fontWeight: 'bold',
@@ -135,9 +116,11 @@ const styles = StyleSheet.create({
     marginBottom: -1, // Ensures no margin between SKU and Quantity
   },
   pickedStatus: {
+    fontWeight: 'bold',
     color: '#28a745',
   },
   notPickedStatus: {
+    fontWeight: 'bold',
     color: '#dc3545',
   },
 });

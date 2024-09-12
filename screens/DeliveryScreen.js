@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
+import RefreshButton from '../components/RefeshButton';
 
 const DeliveryScreen = ({ route }) => {
   const [deliveryCustomers, setDeliveryCustomers] = useState([]);
@@ -23,90 +24,99 @@ const DeliveryScreen = ({ route }) => {
   const driverName = route.params.driverName;
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchDeliveryCustomers = async () => {
-        try {
-            const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
-            const fetchedCustomers = response.data.customers;
+  const fetchDeliveryCustomers = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
+      const fetchedCustomers = response.data.customers;
 
-            // Initialize user inputs, statuses, and locked statuses with fetched data
-            const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
-                if (customer._id) {
-                    acc[customer._id] = '0';
-                }
-                return acc;
-            }, {});
-
-            const initialStatuses = fetchedCustomers.reduce((acc, customer) => {
-                if (customer._id) {
-                    acc[customer._id] = customer.metafield_delivery_status || ''; // Fetch the status
-                }
-                return acc;
-            }, {});
-
-            const initialLockedStatuses = fetchedCustomers.reduce((acc, customer) => {
-                if (customer._id && customer.metafield_delivery_status) {
-                    acc[customer._id] = true; // Lock statuses that are already set
-                }
-                return acc;
-            }, {});
-
-            setDeliveryUserInputs(initialUserInputs);
-            setDeliveryStatuses(initialStatuses);
-            setDeliveryLockedStatuses(initialLockedStatuses);
-
-            // Add type: 'delivery' to each customer object
-            fetchedCustomers.forEach(customer => {
-                customer.type = 'delivery';
-            });
-
-            setDeliveryCustomers(fetchedCustomers);
-        } catch (error) {
-            console.error('Error fetching delivery customers:', error);
-        } finally {
-            setDeliveryLoading(false);
+      // Initialize user inputs, statuses, and locked statuses with fetched data
+      const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
+        if (customer._id) {
+          acc[customer._id] = '0';
         }
-    };
+        return acc;
+      }, {});
 
-    fetchDeliveryCustomers();
-}, [driverName]);
+      const initialStatuses = fetchedCustomers.reduce((acc, customer) => {
+        if (customer._id) {
+          acc[customer._id] = customer.metafield_delivery_status || ''; // Fetch the status
+        }
+        return acc;
+      }, {});
 
-useEffect(() => {
-  const fetchRtoCustomers = async () => {
-      try {
-          const response = await axios.get(`${BACKEND_URL}/api/rtoscreen/${driverName}`);
-          const fetchedCustomers = response.data.customers;
+      const initialLockedStatuses = fetchedCustomers.reduce((acc, customer) => {
+        if (customer._id && customer.metafield_delivery_status) {
+          acc[customer._id] = true; // Lock statuses that are already set
+        }
+        return acc;
+      }, {});
 
-          const initialUserInputs = {};
-          const initialStatuses = {};
-          const initialLockedStatuses = {};
+      setDeliveryUserInputs(initialUserInputs);
+      setDeliveryStatuses(initialStatuses);
+      setDeliveryLockedStatuses(initialLockedStatuses);
 
-          fetchedCustomers.forEach(customer => {
-              if (customer._id) {
-                  initialUserInputs[customer._id] = '0';
-                  initialStatuses[customer._id] = customer.metafield_delivery_status || ''; // Correctly set initialStatuses
-                  if (customer.metafield_delivery_status) {
-                      initialLockedStatuses[customer._id] = true; // Mark as locked if status is present
-                  }
-              }
-              customer.orderType = customer.metafield_order_status || 'Default Order Type'; // Ensure orderType is set
-          });
+      // Add type: 'delivery' to each customer object
+      fetchedCustomers.forEach(customer => {
+        customer.type = 'delivery';
+      });
 
-          setRtoUserInputs(initialUserInputs);
-          setRtoStatuses(initialStatuses);
-          setRtoLockedStatuses(initialLockedStatuses);
-          setRtoCustomers(fetchedCustomers);
-
-          //console.log('Fetched statuses:', initialStatuses); // Debugging log
-      } catch (error) {
-          console.error('Failed to fetch Rto customers:', error);
-      } finally {
-          setRtoLoading(false);
-      }
+      setDeliveryCustomers(fetchedCustomers);
+    } catch (error) {
+      console.error('Error fetching delivery customers:', error);
+    } finally {
+      setDeliveryLoading(false);
+    }
   };
 
-  fetchRtoCustomers();
-}, [driverName]);
+  useEffect(() => {
+    fetchDeliveryCustomers();
+  }, [driverName]);
+
+  const fetchRtoCustomers = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/rtoscreen/${driverName}`);
+      const fetchedCustomers = response.data.customers;
+
+      const initialUserInputs = {};
+      const initialStatuses = {};
+      const initialLockedStatuses = {};
+
+      fetchedCustomers.forEach(customer => {
+        if (customer._id) {
+          initialUserInputs[customer._id] = '0';
+          initialStatuses[customer._id] = customer.metafield_delivery_status || ''; // Correctly set initialStatuses
+          if (customer.metafield_delivery_status) {
+            initialLockedStatuses[customer._id] = true; // Mark as locked if status is present
+          }
+        }
+        customer.orderType = customer.metafield_order_status || 'Default Order Type'; // Ensure orderType is set
+      });
+
+      setRtoUserInputs(initialUserInputs);
+      setRtoStatuses(initialStatuses);
+      setRtoLockedStatuses(initialLockedStatuses);
+      setRtoCustomers(fetchedCustomers);
+
+      //console.log('Fetched statuses:', initialStatuses); // Debugging log
+    } catch (error) {
+      console.error('Failed to fetch Rto customers:', error);
+    } finally {
+      setRtoLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRtoCustomers();
+  }, [driverName]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDeliveryCustomers();
+    await fetchRtoCustomers();
+    setRefreshing(false);
+  };
 
   const [customersCombinedData, setCustomersCombinedData] = useState([]);
   useEffect(() => {
@@ -184,114 +194,136 @@ useEffect(() => {
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
-        const response = await axios.put(`${BACKEND_URL}/api/update-delivery-status/${name}`, {
-            deliveryStatus
-        });
-
-        if (response.status === 200) {
-            Alert.alert('Success', 'Delivery status updated successfully');
-            return { success: true };
-        } else if (response.status === 400) {
-            Alert.alert('Error', 'Cannot change delivery status; status already set.');
-            return { success: false, status: 400 };
-        } else if (response.status === 401) {
-            Alert.alert('Error', 'Cannot update delivery status while there are open locks');
-            return { success: false, status: 401 };
-        } else {
-            console.error('Unexpected Response Status:', response.status);
-            Alert.alert('Error', 'Failed to update delivery status: Unexpected response status');
-            return { success: false };
-        }
-    } catch (error) {
-        console.error('Error updating delivery status:', error);
-        if (error.response?.status === 401) {
-            Alert.alert('Error', 'Cannot update delivery status while there are open locks');
-            return { success: false, status: 401 };
-        } else {
-            Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
-            return { success: false };
-        }
-    }
-};
-
-const updateRtoStatus = async (name, orderType, deliveryStatus) => {
-  try {
-      //console.log("Updating Rto Status with", { name, orderType, deliveryStatus });
-
-      const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${name}/${orderType}`, {
-          deliveryStatus
+      const response = await axios.put(`${BACKEND_URL}/api/update-delivery-status/${name}`, {
+        deliveryStatus
       });
 
       if (response.status === 200) {
-          Alert.alert('Success', 'Rto status updated successfully');
-          return { success: true };
+        Alert.alert('Success', 'Delivery status updated successfully');
+        return { success: true };
       } else if (response.status === 400) {
-          Alert.alert('Error', 'Cannot change Rto status; status already set.');
-          return { success: false, status: 400 };
+        Alert.alert('Error', 'Cannot change delivery status; status already set.');
+        return { success: false, status: 400 };
       } else if (response.status === 401) {
-          Alert.alert('Error', 'Cannot update Rto status while there are open locks');
-          return { success: false, status: 401 };
+        Alert.alert('Error', 'Please submit pickup before proceeding');
+        return { success: false, status: 401 };
       } else {
-          console.error('Unexpected Response Status:', response.status);
-          Alert.alert('Error', 'Failed to update Rto status: Unexpected response status');
-          return { success: false };
+        console.error('Unexpected Response Status:', response.status);
+        Alert.alert('Error', 'Failed to update delivery status: Unexpected response status');
+        return { success: false };
       }
-  } catch (error) {
+    } catch (error) {
+      console.error('Error updating delivery status:', error);
+      if (error.response?.status === 401) {
+        Alert.alert('Error', 'Please submit pickup before proceeding');
+        return { success: false, status: 401 };
+      } else {
+        Alert.alert('Error', 'Failed to update delivery status: Network or Server Error');
+        return { success: false };
+      }
+    }
+  };
+
+  const updateRtoStatus = async (name, orderType, deliveryStatus) => {
+    try {
+      //console.log("Updating Rto Status with", { name, orderType, deliveryStatus });
+
+      const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${name}/${orderType}`, {
+        deliveryStatus
+      });
+
+      if (response.status === 200) {
+        Alert.alert('Success', 'Rto status updated successfully');
+        return { success: true };
+      } else if (response.status === 400) {
+        Alert.alert('Error', 'Cannot change Rto status; status already set.');
+        return { success: false, status: 400 };
+      } else if (response.status === 401) {
+        Alert.alert('Error', 'Please submit pickup before proceeding');
+        return { success: false, status: 401 };
+      } else {
+        console.error('Unexpected Response Status:', response.status);
+        Alert.alert('Error', 'Failed to update Rto status: Unexpected response status');
+        return { success: false };
+      }
+    } catch (error) {
       console.error('Error updating Rto status:', error);
       if (error.response?.status === 401) {
-          Alert.alert('Error', 'Cannot update Rto status while there are open locks');
-          return { success: false, status: 401 };
+        Alert.alert('Error', 'Please submit pickup before proceeding');
+        return { success: false, status: 401 };
       } else {
-          Alert.alert('Error', 'Failed to update Rto status: Network or Server Error');
-          return { success: false };
+        Alert.alert('Error', 'Failed to update Rto status: Network or Server Error');
+        return { success: false };
       }
-  }
-};
+    }
+  };
 
 
-const handleDeliveryStatusChange = (id, value) => {
-  if (deliveryLockedStatuses[id]) {
+  const handleDeliveryStatusChange = (id, value) => {
+    if (value === null) {
+      // Do nothing if the value is null
+      return;
+    }
+  
+    if (deliveryLockedStatuses[id]) {
       Alert.alert('Status Locked', 'This status cannot be changed anymore.');
       return;
-  }
-
+    }
+  
+    // Confirm the status change
   const name = deliveryCustomers.find(c => c._id === id)?.name;
   if (name) {
-      Alert.alert(
-          'Confirm Status Change',
-          `Are you sure you want to update the delivery status to "${value}"?`,
-          [
-              {
-                  text: 'Cancel',
-                  style: 'cancel',
-              },
-              {
-                  text: 'Yes',
-                  onPress: async () => {
-                      const result = await updateDeliveryStatus(name, value);
-                      if (result.success) {
-                          setDeliveryStatuses(prev => {
-                              const updatedStatuses = { ...prev, [id]: value };
-                              return updatedStatuses;
-                          });
-                          setDeliveryLockedStatuses(prev => {
-                              const updatedLockedStatuses = { ...prev, [id]: true };
-                              return updatedLockedStatuses;
-                          });
-                      } else if (result.status === 401) {
-                          Alert.alert('Error', 'Cannot update delivery status while there are open locks');
-                      }
-                  },
-              },
-          ]
-      );
+    Alert.alert(
+      'Confirm Status Change',
+      `Are you sure you want to update to "${value}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            const result = await updateDeliveryStatus(name, value);
+            if (result.success) {
+              // Update status and lock status
+              setDeliveryStatuses(prev => ({
+                ...prev,
+                [id]: value
+              }));
+              setDeliveryLockedStatuses(prev => ({
+                ...prev,
+                [id]: true
+              }));
+            } else if (result.status === 401) {
+              Alert.alert('Error', 'Please submit pickup before proceeding');
+              // Reset the picker value to null (placeholder)
+              setDeliveryStatuses(prev => ({
+                ...prev,
+                [id]: null
+              }));
+            }
+          },
+        },
+      ]
+    );
   }
 };
 
 const handleRtoStatusChange = (id, value) => {
+  if (value === null) {
+    // Do nothing if the value is null
+    return;
+  }
+
   if (rtoLockedStatuses[id]) {
-      Alert.alert('Status Locked', 'This status cannot be changed anymore.');
-      return;
+    Alert.alert('Status Locked', 'This status cannot be changed anymore.');
+    // Reset the picker value to null (placeholder)
+    setRtoStatuses(prev => ({
+      ...prev,
+      [id]: null
+    }));
+    return;
   }
 
   const customer = rtoCustomers.find(c => c._id === id);
@@ -299,80 +331,106 @@ const handleRtoStatusChange = (id, value) => {
   const orderType = customer?.orderType;
 
   if (!orderType) {
-      console.error('Order type is missing for customer:', customer);
-      Alert.alert('Error', 'Order type is missing. Cannot update status.');
-      return;
+    console.error('Order type is missing for customer:', customer);
+    Alert.alert('Error', 'Order type is missing. Cannot update status.');
+    return;
   }
 
   if (name && orderType) {
-      Alert.alert(
-          'Confirm Status Change',
-          `Are you sure you want to update the delivery status to "${value}"?`,
-          [
-              {
-                  text: 'Cancel',
-                  style: 'cancel',
-              },
-              {
-                  text: 'Yes',
-                  onPress: async () => {
-                      const result = await updateRtoStatus(name, orderType, value);
-                      if (result.success) {
-                          setRtoStatuses(prev => ({
-                              ...prev,
-                              [id]: value
-                          }));
-                          setRtoLockedStatuses(prev => ({
-                              ...prev,
-                              [id]: true
-                          }));
-                      } else if (result.status === 401) {
-                          Alert.alert('Error', 'Cannot update Rto status while there are open locks');
-                      }
-                  },
-              },
-          ]
-      );
+    Alert.alert(
+      'Confirm Status Change',
+      `Are you sure you want to update to "${value}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            const result = await updateRtoStatus(name, orderType, value);
+            if (result.success) {
+              setRtoStatuses(prev => ({
+                ...prev,
+                [id]: value
+              }));
+              setRtoLockedStatuses(prev => ({
+                ...prev,
+                [id]: true
+              }));
+            } else if (result.status === 401) {
+              Alert.alert('Error', 'Please submit pickup before proceeding');
+              // Reset the picker value to null (placeholder)
+              setRtoStatuses(prev => ({
+                ...prev,
+                [id]: null
+              }));
+            }
+          },
+        },
+      ]
+    );
   }
 };
 
-  const handleDragEnd = ({ data }) => {
-    setCustomersCombinedData(data);
-  };
+
+  // const handleDragEnd = ({ data }) => {
+  //   setCustomersCombinedData(data);
+  // };
 
   const getStatusColor = (status) => {
     switch (status) {
-        case 'Reverse Pickup Successful':
-        case 'Replacement Pickup Successful':
-        case 'Delivered':
-            return '#d4edda'; // Green
-        case 'Reverse Pickup Failed':
-        case 'Replacement Pickup Failed':
-        case 'Delivery failed':
-            return '#f8d7da'; // Red
-        default:
-            //console.warn('Unknown status:', status);
-            return '#fff'; // Default background color (white)
+      case 'Z-Reverse Successful':
+      case 'Z-Replacement Successful':
+      case 'Z-Delivered':
+        return '#d4edda'; // Green
+      case 'Reverse Pickup Failed':
+      case 'Replacement Pickup Failed':
+      case 'A-Delivery Failed (CNR)':
+      case 'A-Delivery failed (Rescheduled)':
+      case 'Z-Delivery Failed (customer cancelled)':
+      case 'A-Delivery Failed (rider side)':
+      case 'A-Reverse failed (CNR)':
+      case 'A-Reverse failed (Rescheduled)':
+      case 'Z-Reverse failed (customer cancelled)':
+      case 'A-Reverse failed (rider side)':
+      case 'A-Replacement failed (CNR)':
+      case 'A-Replacement failed (Rescheduled)':
+      case 'Z-Replacement failed (customer cancelled)':
+      case 'A-Replacement failed (rider side)':
+        return '#f8d7da'; // Red
+      default:
+        //console.warn('Unknown status:', status);
+        return '#fff'; // Default background color (white)
     }
-};
+  };
 
 
   const deliveryStatusOptions = [
-    { label: 'Delivered', value: 'Delivered' },
-    { label: 'Delivery failed', value: 'Delivery failed' },
+    { label: 'Z-Delivered', value: 'Z-Delivered' },
+    { label: 'A-Delivery Failed (CNR)', value: 'A-Delivery Failed (CNR)' },
+    { label: 'A-Delivery failed (Rescheduled)', value: 'A-Delivery failed (Rescheduled)' },
+    { label: 'Z-Delivery Failed (customer cancelled)', value: 'Z-Delivery Failed (customer cancelled)' },
+    { label: 'A-Delivery Failed (rider side)', value: 'A-Delivery Failed (rider side)' },
   ];
 
   const getRtoStatusOptions = (metafieldOrderStatus) => {
     switch (metafieldOrderStatus) {
       case 'Reverse Pickup':
         return [
-          { label: 'Reverse Pickup Successful', value: 'Reverse Pickup Successful' },
-          { label: 'Reverse Pickup Failed', value: 'Reverse Pickup Failed' }
+          { label: 'Z-Reverse Successful', value: 'Z-Reverse Successful' },
+          { label: 'A-Reverse failed (CNR)', value: 'A-Reverse failed (CNR)' },
+          { label: 'A-Reverse failed (Rescheduled)', value: 'A-Reverse failed (Rescheduled)' },
+          { label: 'Z-Reverse failed (customer cancelled)', value: 'Z-Reverse failed (customer cancelled)' },
+          { label: 'A-Reverse failed (rider side)', value: 'A-Reverse failed (rider side)' }
         ];
       case 'Replacement':
         return [
-          { label: 'Replacement Pickup Successful', value: 'Replacement Pickup Successful' },
-          { label: 'Replacement Pickup Failed', value: 'Replacement Pickup Failed' }
+          { label: 'Z-Replacement Successful', value: 'Z-Replacement Successful' },
+          { label: 'A-Replacement failed (CNR)', value: 'A-Replacement failed (CNR)' },
+          { label: 'A-Replacement failed (Rescheduled)', value: 'A-Replacement failed (Rescheduled)' },
+          { label: 'Z-Replacement failed (customer cancelled)', value: 'Z-Replacement failed (customer cancelled)' },
+          { label: 'A-Replacement failed (rider side)', value: 'A-Replacement failed (rider side)' }
         ];
       default:
         return [
@@ -386,146 +444,158 @@ const handleRtoStatusChange = (id, value) => {
     navigation.navigate('RTOProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType });
   };
 
+  const DeliveryNavigateToProductDetails = (orderCode, metafieldOrderType) => {
+    navigation.navigate('DeliveryProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType });
+  };
+
   const keyExtractor = (item) => (item.type || `type-${Math.random()}`) + "-" + (item._id?.toString() || `key-${Math.random()}`);
 
   return (
     <View style={deliveryStyles.container}>
-        <DraggableFlatList
-            data={customersCombinedData}
-            keyExtractor={keyExtractor}
-            renderItem={({ item, drag, isActive }) => {
-                const statusColor = getStatusColor(deliveryStatuses[item._id]);
-               // console.log(`Status for ${item.name}: ${deliveryStatuses[item._id]}, Color: ${statusColor}`);
+      <DraggableFlatList
+        data={customersCombinedData}
+        keyExtractor={keyExtractor}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        renderItem={({ item, isActive }) => {
+          const statusColor = getStatusColor(deliveryStatuses[item._id]);
+          // console.log(`Status for ${item.name}: ${deliveryStatuses[item._id]}, Color: ${statusColor}`);
 
-                if (item.type === 'delivery') {
-                    return (
-                        <View style={[deliveryStyles.itemContainer, { backgroundColor: statusColor }]}>
-                            <View style={deliveryStyles.infoContainer}>
-                                <Text style={[deliveryStyles.orderCode, { color: 'green' }]}>{item.order_code}</Text>
-                                <Text style={deliveryStyles.customerName}>{item.name}</Text>
-                                <Text style={deliveryStyles.address}>{item.address}</Text>
-                                <View style={deliveryStyles.pickerContainer}>
-                                    <RNPickerSelect
-                                        placeholder={{ label: 'Select Status', value: null }}
-                                        items={deliveryStatusOptions}
-                                        onValueChange={(value) => handleDeliveryStatusChange(item._id, value)}
-                                        style={pickerSelectStyles}
-                                        value={deliveryStatuses[item._id]}
-                                        disabled={deliveryLockedStatuses[item._id]} // Disable picker if status is locked
-                                    />
-                                </View>
-                                {deliveryStatuses[item._id] === 'Delivered' && (
-                                    <View style={deliveryStyles.textInputContainer}>
-                                        <Text style={deliveryStyles.textLabel}>Item delivered:</Text>
-                                        <View style={deliveryStyles.counterContainer}>
-                                            <TouchableOpacity
-                                                style={deliveryStyles.counterButton}
-                                                onPress={() => handleDeliveryDecrement(item._id)}
-                                            >
-                                                <Text style={deliveryStyles.counterButtonText}>-</Text>
-                                            </TouchableOpacity>
-                                            <TextInput
-                                                style={deliveryStyles.textInput}
-                                                keyboardType="numeric"
-                                                value={deliveryUserInputs[item._id]}
-                                                onChangeText={(text) => handleDeliveryInputChange(item._id, text)}
-                                            />
-                                            <TouchableOpacity
-                                                style={deliveryStyles.counterButton}
-                                                onPress={() => handleDeliveryIncrement(item._id)}
-                                            >
-                                                <Text style={deliveryStyles.counterButtonText}>+</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <Text style={deliveryStyles.counterValue}>/{deliveryCustomers.find(c => c._id === item._id)?.items || 0}</Text>
-                                    </View>
-                                )}
-                            </View>
-                            <View style={deliveryStyles.iconContainer}>
-                                <TouchableOpacity onPress={() => openMap(item.address)} style={deliveryStyles.iconButton}>
-                                    <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => makeCall(item.phone)} style={deliveryStyles.iconButton}>
-                                    <FontAwesome name="phone" size={35} color="#287238" />
-                                </TouchableOpacity>
-                            </View>
-                            <TouchableOpacity style={deliveryStyles.dragHandle} onLongPress={drag}>
-                                <MaterialCommunityIcons name="drag" size={24} color="#888" />
-                            </TouchableOpacity>
-                        </View>
-                    )
+          if (item.type === 'delivery') {
+            return (
+              <View style={[deliveryStyles.itemContainer, { backgroundColor: statusColor }]}>
+              <View style={deliveryStyles.infoContainer}>
+                <Text style={[deliveryStyles.orderCode, { color: 'green' }]}>{item.order_code}</Text>
+                <Text style={deliveryStyles.customerName}>{item.name}</Text>
+                <Text style={deliveryStyles.address}>{item.address}</Text>
+                <View style={deliveryStyles.pickerContainer}>
+                  <RNPickerSelect
+                    placeholder={{ label: 'Select Status', value: null }} // Initial text
+                    items={deliveryStatusOptions}
+                    onValueChange={(value) => handleDeliveryStatusChange(item._id, value)}
+                    style={pickerSelectStyles}
+                    value={deliveryStatuses[item._id] || null} // Show placeholder if no status
+                    disabled={deliveryLockedStatuses[item._id]} // Disable picker if status is locked
+                  />
+                </View>
+                {deliveryStatuses[item._id] === 'Delivered' && (
+                  <View style={deliveryStyles.textInputContainer}>
+                    <Text style={deliveryStyles.textLabel}>Item delivered:</Text>
+                    <View style={deliveryStyles.counterContainer}>
+                      <TouchableOpacity
+                        style={deliveryStyles.counterButton}
+                        onPress={() => handleDeliveryDecrement(item._id)}
+                      >
+                        <Text style={deliveryStyles.counterButtonText}>-</Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={deliveryStyles.textInput}
+                        keyboardType="numeric"
+                        value={deliveryUserInputs[item._id]}
+                        onChangeText={(text) => handleDeliveryInputChange(item._id, text)}
+                      />
+                      <TouchableOpacity
+                        style={deliveryStyles.counterButton}
+                        onPress={() => handleDeliveryIncrement(item._id)}
+                      >
+                        <Text style={deliveryStyles.counterButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={deliveryStyles.counterValue}>/{deliveryCustomers.find(c => c._id === item._id)?.items || 0}</Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={deliveryStyles.detailsButton}
+                  onPress={() => DeliveryNavigateToProductDetails(item.order_code, item.metafield_order_status)}
+                >
+                  <Text style={deliveryStyles.detailsButtonText}>View Products</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={deliveryStyles.iconContainer}>
+                <TouchableOpacity onPress={() => openMap(item.address)} style={deliveryStyles.iconButton}>
+                  <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => makeCall(item.phone)} style={deliveryStyles.iconButton}>
+                  <FontAwesome name="phone" size={35} color="#287238" />
+                </TouchableOpacity>
+              </View>
+              {/* <TouchableOpacity style={deliveryStyles.dragHandle} onLongPress={drag}>
+                <MaterialCommunityIcons name="drag" size={24} color="#888" />
+              </TouchableOpacity> */}
+            </View>
+            )
             // } else if (item.type === 'rto') {
           } else {
             return (
               <View style={[rtoStyles.itemContainer, { backgroundColor: getStatusColor(rtoStatuses[item._id]) }]}>
-                  <TouchableOpacity onLongPress={drag} delayLongPress={150} disabled={isActive}>
-                      <View style={rtoStyles.infoContainer}>
-                          <View style={rtoStyles.orderCodeContainer}>
-                              <Text style={rtoStyles.orderCode}>{item.order_code}</Text>
-                              <Text style={rtoStyles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
-                          </View>
-                          <Text style={rtoStyles.customerName}>{item.name}</Text>
-                          <Text style={rtoStyles.address}>{item.address}</Text>
-                          <View style={rtoStyles.pickerContainer}>
-                              <RNPickerSelect
-                                  placeholder={{ label: 'Select Status', value: null }}
-                                  items={getRtoStatusOptions(item.metafield_order_status)}
-                                  onValueChange={(value) => handleRtoStatusChange(item._id, value)}
-                                  style={pickerSelectStyles}
-                                  value={rtoStatuses[item._id]}
-                                  disabled={rtoLockedStatuses[item._id]} // Disable picker if status is locked
-                              />
-                          </View>
-                          {rtoStatuses[item._id] === 'Delivered' && (
-                              <View style={rtoStyles.textInputContainer}>
-                                  <Text style={rtoStyles.textLabel}>Items Delivered:</Text>
-                                  <View style={rtoStyles.counterContainer}>
-                                      <TouchableOpacity
-                                          style={rtoStyles.counterButton}
-                                          onPress={() => handleRtoDecrement(item._id)}
-                                      >
-                                          <Text style={rtoStyles.counterButtonText}>-</Text>
-                                      </TouchableOpacity>
-                                      <TextInput
-                                          style={rtoStyles.textInput}
-                                          keyboardType="numeric"
-                                          value={rtoUserInputs[item._id]}
-                                          onChangeText={(text) => handleRtoInputChange(item._id, text)}
-                                      />
-                                      <TouchableOpacity
-                                          style={rtoStyles.counterButton}
-                                          onPress={() => handleRtoIncrement(item._id)}
-                                      >
-                                          <Text style={rtoStyles.counterButtonText}>+</Text>
-                                      </TouchableOpacity>
-                                  </View>
-                                  <Text style={rtoStyles.counterValue}>
-                                      {`/${rtoCustomers.find(c => c._id === item._id)?.items || 0}`}
-                                  </Text>
-                              </View>
-                          )}
-                          <TouchableOpacity
-                              style={rtoStyles.detailsButton}
-                              onPress={() => RTOnavigateToProductDetails(item.order_code, item.metafield_order_status)}
-                          >
-                              <Text style={rtoStyles.detailsButtonText}>View Products</Text>
-                          </TouchableOpacity>
-                      </View>
-                  </TouchableOpacity>
-                  <View style={rtoStyles.iconContainer}>
-                      <TouchableOpacity onPress={() => openMap(item.address)} style={rtoStyles.iconButton}>
-                          <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => makeCall(item.phone)} style={rtoStyles.iconButton}>
-                          <FontAwesome name="phone" size={35} color="#287238" />
-                      </TouchableOpacity>
+              <TouchableOpacity>
+                <View style={rtoStyles.infoContainer}>
+                  <View style={rtoStyles.orderCodeContainer}>
+                    <Text style={rtoStyles.orderCode}>{item.order_code}</Text>
+                    <Text style={rtoStyles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
                   </View>
+                  <Text style={rtoStyles.customerName}>{item.name}</Text>
+                  <Text style={rtoStyles.address}>{item.address}</Text>
+                  <View style={rtoStyles.pickerContainer}>
+                    <RNPickerSelect
+                      placeholder={{ label: 'Select Status', value: null }} // Initial text
+                      items={getRtoStatusOptions(item.metafield_order_status)}
+                      onValueChange={(value) => handleRtoStatusChange(item._id, value)}
+                      style={pickerSelectStyles}
+                      value={rtoStatuses[item._id] || null} // Show placeholder if no status
+                      disabled={rtoLockedStatuses[item._id]} // Disable picker if status is locked
+                    />
+                  </View>
+                  {rtoStatuses[item._id] === 'Delivered' && (
+                    <View style={rtoStyles.textInputContainer}>
+                      <Text style={rtoStyles.textLabel}>Items Delivered:</Text>
+                      <View style={rtoStyles.counterContainer}>
+                        <TouchableOpacity
+                          style={rtoStyles.counterButton}
+                          onPress={() => handleRtoDecrement(item._id)}
+                        >
+                          <Text style={rtoStyles.counterButtonText}>-</Text>
+                        </TouchableOpacity>
+                        <TextInput
+                          style={rtoStyles.textInput}
+                          keyboardType="numeric"
+                          value={rtoUserInputs[item._id]}
+                          onChangeText={(text) => handleRtoInputChange(item._id, text)}
+                        />
+                        <TouchableOpacity
+                          style={rtoStyles.counterButton}
+                          onPress={() => handleRtoIncrement(item._id)}
+                        >
+                          <Text style={rtoStyles.counterButtonText}>+</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={rtoStyles.counterValue}>
+                        {`/${rtoCustomers.find(c => c._id === item._id)?.items || 0}`}
+                      </Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={rtoStyles.detailsButton}
+                    onPress={() => RTOnavigateToProductDetails(item.order_code, item.metafield_order_status)}
+                  >
+                    <Text style={rtoStyles.detailsButtonText}>View Products</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+              <View style={rtoStyles.iconContainer}>
+                <TouchableOpacity onPress={() => openMap(item.address)} style={rtoStyles.iconButton}>
+                  <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => makeCall(item.phone)} style={rtoStyles.iconButton}>
+                  <FontAwesome name="phone" size={35} color="#287238" />
+                </TouchableOpacity>
               </View>
-          );                                
+            </View>
+            );
           }
         }}
-        onDragEnd={handleDragEnd}
+        //onDragEnd={handleDragEnd}
       />
+      <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
 };
@@ -547,7 +617,7 @@ const commonItemContainer = {
 const deliveryStyles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 8,
     backgroundColor: '#f9f9f9',
   },
   itemContainer: {
@@ -562,18 +632,18 @@ const deliveryStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#28a745', // Consistent green color for order code
-    marginBottom: 4,
+    //marginBottom: 4,
   },
   customerName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
+    //marginBottom: 4,
   },
   address: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 4,
+    //marginBottom: 4,
   },
   textInputContainer: {
     flexDirection: 'row',
@@ -626,12 +696,23 @@ const deliveryStyles = StyleSheet.create({
     marginHorizontal: 8,
     marginBottom: 10,
   },
+  detailsButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#287238',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  detailsButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 });
 
 const rtoStyles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 8,
     backgroundColor: '#f9f9f9',
   },
   itemContainer: {
@@ -640,12 +721,12 @@ const rtoStyles = StyleSheet.create({
   infoContainer: {
     flex: 1,
     paddingRight: 35,
-    maxWidth: 320,
+    maxWidth: 282,
   },
   orderCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    //marginBottom: 4,
   },
   orderCode: {
     fontSize: 16,
@@ -662,12 +743,12 @@ const rtoStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
+    //marginBottom: 4,
   },
   address: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 4,
+    //marginBottom: 4,
   },
   textInputContainer: {
     flexDirection: 'row',
