@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.sharmaharsh634.Urvann_Rider_Panel"
+      "package": "com.sharmaharsh634.Urvann_Rider_Panel",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
