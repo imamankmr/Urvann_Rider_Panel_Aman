@@ -13,7 +13,7 @@ const ProductDetailsScreen = ({ route }) => {
 
   const fetchProductDetails = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/rtoscreen/product-details`, {
+      const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
         params: {
           order_code: order_code,
           metafield_order_type: metafield_order_type,
@@ -64,8 +64,8 @@ const ProductDetailsScreen = ({ route }) => {
               <Text style={styles.label}>Quantity: </Text>{product.total_item_quantity}
             </Text>
             {/* Displaying pickup status without label */}
-            <Text style={[styles.text, product.delivery_status === "Delivered" ? styles.deliveredStatus : styles.notDeliveredStatus]}>
-              {product.delivery_status}
+            <Text style={[styles.text, product.pickup_status === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
+              {product.pickup_status}
             </Text>
           </View>
         </View>
@@ -115,11 +115,11 @@ const styles = StyleSheet.create({
   noMargin: {
     marginBottom: -1, // Ensures no margin between SKU and Quantity
   },
-  deliveredStatus: {
+  pickedStatus: {
     fontWeight: 'bold',
     color: '#28a745',
   },
-  notDeliveredStatus: {
+  notPickedStatus: {
     fontWeight: 'bold',
     color: '#dc3545',
   },

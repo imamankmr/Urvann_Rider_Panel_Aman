@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, ScrollView, Modal, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import Swiper from 'react-native-swiper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_URL } from 'react-native-dotenv';
 
 const ReverseProductDetailsScreen = ({ route }) => {
@@ -14,26 +13,6 @@ const ReverseProductDetailsScreen = ({ route }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectAll, setSelectAll] = useState({});
 
-  // Function to save delivery status locally
-  const saveDeliveryStatusLocally = async (sku, orderCode, status) => {
-    try {
-      await AsyncStorage.setItem(`${sku}_${orderCode}`, status);
-    } catch (error) {
-      console.error('Error saving delivery status:', error);
-    }
-  };
-
-  // Function to load delivery status locally
-  const loadDeliveryStatusLocally = async (sku, orderCode) => {
-    try {
-      const status = await AsyncStorage.getItem(`${sku}_${orderCode}`);
-      return status || "Not Delivered";
-    } catch (error) {
-      console.error('Error loading delivery status:', error);
-      return "Not Delivered";
-    }
-  };
-
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -44,20 +23,12 @@ const ReverseProductDetailsScreen = ({ route }) => {
           }
         });
         
-        const fetchedProducts = await Promise.all(response.data.products.map(async product => {
-          const localStatus = await loadDeliveryStatusLocally(product.line_item_sku, product.FINAL);
-          return {
-            ...product,
-            "Delivery Status": localStatus
-          };
-        }));
-
-        setProducts(fetchedProducts);
+        setProducts(response.data.products);
         setOrderCodeQuantities(response.data.orderCodeQuantities);
 
         // Initialize selectAll based on the fetched products' status
         const initialSelectAll = {};
-        fetchedProducts.forEach(product => {
+        response.data.products.forEach(product => {
           if (!initialSelectAll[product.FINAL]) {
             initialSelectAll[product.FINAL] = true;
           }
@@ -74,7 +45,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
     };
 
     fetchProducts();
-  }, [sellerName, driverName]);
+  }, [sellerName, driverName, endpoint]);
 
   const handleImagePress = (product) => {
     setSelectedProduct(product);
@@ -96,13 +67,6 @@ const ReverseProductDetailsScreen = ({ route }) => {
         product.FINAL === finalCode ? { ...product, "Delivery Status": newStatus } : product
       );
       setProducts(updatedProducts);
-  
-      await Promise.all(updatedProducts.map(async product => {
-        if (product.FINAL === finalCode) {
-          await saveDeliveryStatusLocally(product.line_item_sku, finalCode, newStatus);
-        }
-      }));
-  
     } catch (error) {
       console.error('Error updating delivery status in bulk:', error);
     }
@@ -131,9 +95,7 @@ const ReverseProductDetailsScreen = ({ route }) => {
         orderCode,
         status: newStatus
       });
-  
-      await saveDeliveryStatusLocally(sku, orderCode, newStatus);
-  
+
       const allDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Delivery Status"] === "Delivered");
       const allNotDelivered = updatedProducts.filter(product => product.FINAL === orderCode).every(product => product["Delivery Status"] === "Not Delivered");
   
@@ -170,10 +132,21 @@ const ReverseProductDetailsScreen = ({ route }) => {
                 <Image source={{ uri: product.image1 }} style={styles.image} />
               </TouchableOpacity>
               <View style={styles.textContainer}>
-                <Text style={styles.text}>SKU: {product.line_item_sku}</Text>
-                <Text style={styles.text}>Name: {product.line_item_name}</Text>
-                <Text style={styles.text}>Quantity: {product.total_item_quantity}</Text>
-                <Text style={[styles.statusText, product["Delivery Status"] === "Delivered" ? styles.deliveredStatus : styles.notDeliveredStatus]}>
+                <Text style={styles.text}>
+                  <Text style={styles.boldText}>SKU: </Text>{product.line_item_sku}
+                </Text>
+                <Text style={styles.text}>
+                  <Text style={styles.boldText}>Name: </Text>{product.line_item_name}
+                </Text>
+                <Text style={styles.text}>
+                  <Text style={styles.boldText}>Quantity: </Text>{product.total_item_quantity}
+                </Text>
+                <Text
+                  style={[
+                    styles.statusText,
+                    product["Delivery Status"] === "Delivered" ? styles.deliveredStatus : styles.notDeliveredStatus,
+                  ]}
+                >
                   {product["Delivery Status"]}
                 </Text>
               </View>
@@ -224,13 +197,13 @@ const ReverseProductDetailsScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     paddingTop: 20,
   },
+  wrapper: {},
   scrollViewContainer: {
-    paddingBottom: 20,
-    // paddingTop: 10,
-    backgroundColor: '#fff',
+    flexGrow: 1,
+    backgroundColor: '#f5f5f5',
   },
   orderContainer: {
     backgroundColor: '#ffffff',
@@ -239,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: '90%',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
     padding: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -262,21 +235,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   header: {
-    fontSize: 20,
+    fontSize: 18, // Slightly smaller font size for headers
     fontWeight: 'bold',
     textAlign: 'center',
   },
   subHeader: {
-    fontSize: 20,
+    fontSize: 18, // Slightly smaller font size for sub-headers
     color: '#555',
     textAlign: 'center',
   },
   productContainer: {
     flexDirection: 'row',
-    marginBottom: 15,
+    marginBottom: 10, // Reduce margin to make it more compact
     backgroundColor: '#ffffff',
-    padding: 15,
-    borderColor: '#ddd',
+    padding: 12, // Reduce padding for a smaller container
+    borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 10,
     width: '90%',
@@ -286,12 +259,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
- 
   image: {
-    width: 100,
+    width: 100, // Reduce the size of the image
     height: 100,
     resizeMode: 'cover',
-    marginRight: 15,
+    marginRight: 8,
     borderRadius: 10,
   },
   textContainer: {
@@ -299,13 +271,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontSize: 16,
-    marginBottom: 1,
+    fontSize: 14, // Smaller font size
+    marginBottom: 1, // Reduced spacing between text elements
+  },
+  boldText: {
+    fontWeight: 'bold', // Only bold for the label text
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 14, // Smaller font size for status text
     fontWeight: 'bold',
-    marginTop: 5,
+    marginTop: 1, // Reduced margin to bring status text closer to quantity
   },
   deliveredStatus: {
     color: '#28a745',

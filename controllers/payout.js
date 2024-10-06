@@ -5,12 +5,12 @@ const Refund = require('../models/Refund');
 const summary = async (req, res) => {
     try {
         const driverName = req.params.driverName;
-        console.log(`Fetching summary for seller: ${driverName}`);
+        //console.log(`Fetching summary for seller: ${driverName}`);
 
         const summary = await Summary.findOne({ Name: driverName });
 
         if (!summary) {
-            console.log('Summary not found');
+            //console.log('Summary not found');
             return res.status(200).json({ message: 'Summary not found' });
         }
 
@@ -37,7 +37,7 @@ const refund = async (req, res) => {
 const payable = async (req, res) => {
     try {
         const driverName = req.params.driverName;
-        console.log(`Fetching payable for seller: ${driverName}`);
+        //console.log(`Fetching payable for seller: ${driverName}`);
 
         const payables = await Payable.find({ 'Driver Name': driverName });
 

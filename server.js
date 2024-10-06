@@ -68,6 +68,7 @@ app.get('/api/payable/:driverName', payout.payable);
 // Endpoints for Delivery
 app.get('/api/customers/:driverName', delivery.customers);
 app.put('/api/update-delivery-status/:customerName', delivery.updateDeliveryStatus);
+app.get('/deliveryscreen/product-details', delivery.deliveryProductDetails);
 
 // Endpoints for RTO
 app.get('/api/rtoscreen/:driverName', rto.rtoData);
@@ -76,9 +77,8 @@ app.get('/api/rtoscreen/:driverName', rto.rtoData);
 // server.js or app.js
 app.get('/rtoscreen/product-details', rto.rtoProductDetails);
 
+
 app.put('/api/update-rto-status/:customerName/:orderType', rto.updateRTOStatus);
-
-
 
 // Server listening on port 5001
 app.listen(5001, () => {

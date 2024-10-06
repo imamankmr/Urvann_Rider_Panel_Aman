@@ -55,21 +55,21 @@ const RegisterScreen = ({ navigation }) => {
                 autoCorrect={false}
               />
               <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#888"
-                  value={password}
-                  onChangeText={(text) => setPassword(text)}
-                  secureTextEntry
-                />
-                <TouchableOpacity
-                  style={styles.showPasswordButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#287238" />
-                </TouchableOpacity>
-              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#888"
+                value={password}
+                onChangeText={(text) => setPassword(text)}
+                secureTextEntry={!showPassword} // Toggles password visibility
+              />
+              <TouchableOpacity
+                style={styles.showPasswordButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#287238" />
+              </TouchableOpacity>
+            </View>
               <TouchableOpacity style={styles.button} onPress={handleRegister}>
                 <Text style={styles.buttonText}>Register</Text>
               </TouchableOpacity>
