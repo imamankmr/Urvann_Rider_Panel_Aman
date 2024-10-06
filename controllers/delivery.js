@@ -187,17 +187,21 @@ const deliveryProductDetails = async (req, res) => {
 
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
-    const { deliveryStatus } = req.body;
+    const { deliveryStatus, driverName } = req.body; // Take driverName from req.body
 
     try {
-        const lockedStatuses = await Route.find({ Lock_Status: "Open" });
+        // Check for locked statuses only for the specific driver
+        const lockedStatuses = await Route.find({ 
+            Lock_Status: "Open", 
+            "Driver Name": driverName // Add the driverName condition
+        });
 
-        //console.log(lockedStatuses);
-
+        // If any locked statuses are found, send a 401 response
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
         }
 
+        // Update the delivery status for the customer and driver
         const result = await Route.updateMany(
             {
                 metafield_order_type: { $in: [null] },
@@ -206,18 +210,19 @@ const updateDeliveryStatus = async (req, res) => {
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
         
-        //console.log('Update Result:', result);        
-
+        // If no records were updated, send a 404 response
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update');
         }
 
+        // Send success response if records were updated
         res.status(200).send('Delivery status updated successfully');
     } catch (error) {
         console.error(error);
         res.status(500).send('Server error');
     }
-}
+};
+
 
 module.exports = {
     customers,
