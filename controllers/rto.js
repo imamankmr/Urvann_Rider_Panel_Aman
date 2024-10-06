@@ -128,24 +128,29 @@ const rtoProductDetails = async (req, res) => {
 
 const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params; // Use parameters directly
-    const { deliveryStatus } = req.body;
+    const { deliveryStatus, driverName } = req.body; // Include driverName from req.body
 
-    //console.log("Received parameters:", { customerName, orderType, deliveryStatus });
+    // Log received parameters (optional for debugging)
+    //console.log("Received parameters:", { customerName, orderType, deliveryStatus, driverName });
 
+    // Validate if deliveryStatus is present
     if (!deliveryStatus) {
         console.warn('Delivery status is undefined or null');
         return res.status(400).send('Delivery status is required');
     }
 
     try {
-        // Check if there are open locks
-        const lockedStatuses = await Route.find({ Lock_Status: "Open" });
+        // Check if there are open locks for the specific driver
+        const lockedStatuses = await Route.find({ 
+            Lock_Status: "Open", 
+            "Driver Name": driverName // Filter by driverName
+        });
 
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
         }
 
-        // Update RTO status
+        // Update RTO status for the customer and order type
         const result = await Route.updateMany(
             {
                 shipping_address_full_name: customerName,
@@ -154,10 +159,12 @@ const updateRTOStatus = async (req, res) => {
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
 
+        // If no records were updated, return a 404 response
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update for the given customer and order type');
         }
 
+        // Return success response if update was successful
         res.status(200).send('RTO status updated successfully');
     } catch (error) {
         console.error('Error in updateRTOStatus:', error.message);
