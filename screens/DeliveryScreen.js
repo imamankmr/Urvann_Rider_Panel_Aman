@@ -195,7 +195,8 @@ const DeliveryScreen = ({ route }) => {
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
       const response = await axios.put(`${BACKEND_URL}/api/update-delivery-status/${name}`, {
-        deliveryStatus
+        deliveryStatus,
+        driverName,
       });
 
       if (response.status === 200) {
@@ -229,7 +230,8 @@ const DeliveryScreen = ({ route }) => {
       //console.log("Updating Rto Status with", { name, orderType, deliveryStatus });
 
       const response = await axios.put(`${BACKEND_URL}/api/update-rto-status/${name}/${orderType}`, {
-        deliveryStatus
+        deliveryStatus,
+        driverName,
       });
 
       if (response.status === 200) {

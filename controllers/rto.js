@@ -140,18 +140,23 @@ const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params;
     const { deliveryStatus, username } = req.body;
 
+    // Validate if deliveryStatus is present
     if (!deliveryStatus) {
         return res.status(400).send('Delivery status is required');
     }
 
     try {
-        // Check if there are open locks
-        const lockedStatuses = await Route.find({ Lock_Status: "Open" });
+        // Check if there are open locks for the specific driver
+        const lockedStatuses = await Route.find({ 
+            Lock_Status: "Open", 
+            "Driver Name": driverName // Filter by driverName
+        });
+
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
         }
 
-        // Update RTO status
+        // Update RTO status for the customer and order type
         const result = await Route.updateMany(
             {
                 shipping_address_full_name: customerName,
@@ -160,6 +165,7 @@ const updateRTOStatus = async (req, res) => {
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
 
+        // If no records were updated, return a 404 response
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update for the given customer and order type');
         }

@@ -50,7 +50,7 @@ const customers = async (req, res) => {
         // Define the filter conditions for Delivery_Status
         const filterConditions = [
             { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
-            //{ 'metafield_order_type': 'Replacement' }
+            { 'metafield_order_type': 'Replacement' }
         ];
 
         const routes = await Route.find({
@@ -200,11 +200,16 @@ const getISTTime = () => {
 
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
-    const { deliveryStatus, username } = req.body;
+    const { deliveryStatus, driverName } = req.body; // Take driverName from req.body
 
     try {
-        // Check if there are any open "Lock_Status" entries
-        const lockedStatuses = await Route.find({ Lock_Status: "Open" });
+        // Check for locked statuses only for the specific driver
+        const lockedStatuses = await Route.find({ 
+            Lock_Status: "Open", 
+            "Driver Name": driverName // Add the driverName condition
+        });
+
+        // If any locked statuses are found, send a 401 response
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
         }
@@ -217,7 +222,6 @@ const updateDeliveryStatus = async (req, res) => {
             },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
-
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update');
         }
