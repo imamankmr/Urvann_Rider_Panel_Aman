@@ -1,6 +1,7 @@
 const Route = require('../models/route');
 const Photo = require('../models/photo');
-
+const moment = require('moment-timezone'); // Import moment-timezone
+const Audit = require('../models/audit');
 const rtoData = async (req, res) => {
     try {
         const { driverName } = req.params;
@@ -124,23 +125,28 @@ const rtoProductDetails = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
+// Function to convert current time to IST
+const getISTTime = () => {
+    const istTime = moment.tz('Asia/Kolkata');  // Get current time in IST
+    return {
+        istDate: istTime.toDate(),  // Save as a Date object (it will be saved in UTC in MongoDB)
+        istFormatted: istTime.format('DD-MM-YYYY hh:mm A'),  // Save formatted IST string
+        startOfDayIST: istTime.clone().startOf('day').toDate(),  // Start of the day in IST as Date
+        endOfDayIST: istTime.clone().endOf('day').toDate()  // End of the day in IST as Date
+    };
+};
 
 const updateRTOStatus = async (req, res) => {
-    const { customerName, orderType } = req.params; // Use parameters directly
-    const { deliveryStatus } = req.body;
-
-    //console.log("Received parameters:", { customerName, orderType, deliveryStatus });
+    const { customerName, orderType } = req.params;
+    const { deliveryStatus, username } = req.body;
 
     if (!deliveryStatus) {
-        console.warn('Delivery status is undefined or null');
         return res.status(400).send('Delivery status is required');
     }
 
     try {
         // Check if there are open locks
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
-
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
         }
@@ -158,10 +164,22 @@ const updateRTOStatus = async (req, res) => {
             return res.status(404).send('No records found to update for the given customer and order type');
         }
 
+        // Track the time of the last RTO status update
+        const { istDate: updateTime } = getISTTime(); // Use getISTTime to get IST date
+
+        // Update or create the audit record for this rider's username
+        const auditRecord = await Audit.findOne({ username }).sort({ loginTime: -1 });
+
+        if (auditRecord) {
+            auditRecord.lastUpdatedStatusTime = updateTime; // Set the last update time
+            await auditRecord.save(); // Save the audit record with updated time
+        } else {
+            return res.status(404).send('No audit record found for this rider');
+        }
+
         res.status(200).send('RTO status updated successfully');
     } catch (error) {
         console.error('Error in updateRTOStatus:', error.message);
-        console.error('Stack trace:', error.stack);
         res.status(500).send('Server error');
     }
 };

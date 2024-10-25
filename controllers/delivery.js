@@ -1,5 +1,7 @@
 const Route = require('../models/route');
 const Photo = require('../models/photo');
+const Audit = require('../models/audit');
+const moment = require('moment-timezone'); // Import moment-timezone
 // const customers = async (req, res) => {
 //     try {
 //         const { driverName } = req.params;
@@ -185,31 +187,55 @@ const deliveryProductDetails = async (req, res) => {
 //     }
 // }
 
+// Function to convert current time to IST
+const getISTTime = () => {
+    const istTime = moment.tz('Asia/Kolkata');  // Get current time in IST
+    return {
+        istDate: istTime.toDate(),  // Save as a Date object (it will be saved in UTC in MongoDB)
+        istFormatted: istTime.format('DD-MM-YYYY hh:mm A'),  // Save formatted IST string
+        startOfDayIST: istTime.clone().startOf('day').toDate(),  // Start of the day in IST as Date
+        endOfDayIST: istTime.clone().endOf('day').toDate()  // End of the day in IST as Date
+    };
+};
+
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
-    const { deliveryStatus } = req.body;
+    const { deliveryStatus, username } = req.body;
 
     try {
+        // Check if there are any open "Lock_Status" entries
         const lockedStatuses = await Route.find({ Lock_Status: "Open" });
-
-        //console.log(lockedStatuses);
-
         if (lockedStatuses.length > 0) {
             return res.status(401).send('Please submit pickup before proceeding');
         }
 
+        // Update delivery status for matching routes
         const result = await Route.updateMany(
             {
-                metafield_order_type: { $in: [null] },
+                metafield_order_type: { $in: [null] }, // Only normal orders
                 shipping_address_full_name: customerName
             },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
-        
-        //console.log('Update Result:', result);        
 
         if (result.matchedCount === 0) {
             return res.status(404).send('No records found to update');
+        }
+
+        // Track the time of the last delivery status update in IST
+        const { istDate } = getISTTime(); // Extract only the istDate for MongoDB
+
+        // Update or create the audit record for this rider's username
+        const auditRecord = await Audit.findOne({ username }).sort({ loginTime: -1 });
+
+        if (auditRecord) {
+            // If the last updated status time is earlier than the current update time, update it
+            if (!auditRecord.lastUpdatedStatusTime || new Date(auditRecord.lastUpdatedStatusTime) < new Date(istDate)) {
+                auditRecord.lastUpdatedStatusTime = istDate; // Set the last update time as istDate (Date object)
+                await auditRecord.save(); // Save the audit record with updated time
+            }
+        } else {
+            return res.status(404).send('No audit record found for this rider');
         }
 
         res.status(200).send('Delivery status updated successfully');
@@ -217,7 +243,10 @@ const updateDeliveryStatus = async (req, res) => {
         console.error(error);
         res.status(500).send('Server error');
     }
-}
+};
+
+
+
 
 module.exports = {
     customers,

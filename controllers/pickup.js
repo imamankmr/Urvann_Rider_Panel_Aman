@@ -1,5 +1,8 @@
 const Route = require('../models/route');
 const Photo = require('../models/photo');
+const Audit = require('../models/audit');
+const moment = require('moment-timezone'); // Import moment-timezone
+
 
 // const sellers = async (req, res) => {
 //     const { driverName } = req.params;
@@ -905,6 +908,43 @@ const reverseNotDeliveredProducts = async (req, res) => {
     }
 };
 
+// Function to convert current time to IST
+const getISTTime = () => {
+    const istTime = moment.tz('Asia/Kolkata');  // Get current time in IST
+    return {
+        istDate: istTime.toDate(),  // Save as a Date object (it will be saved in UTC in MongoDB)
+        istFormatted: istTime.format('DD-MM-YYYY hh:mm A'),  // Save formatted IST string
+        startOfDayIST: istTime.clone().startOf('day').toDate(),  // Start of the day in IST as Date
+        endOfDayIST: istTime.clone().endOf('day').toDate()  // End of the day in IST as Date
+    };
+};
+
+const setFirstPickupTime = async (driverName, istTime) => {
+    const currentDate = moment.tz('Asia/Kolkata').startOf('day').toDate();
+    
+    // Fetch the audit record for the driver
+    const auditRecord = await Audit.findOne({ username: driverName });
+
+    if (!auditRecord || !auditRecord.firstPickupTime || !moment(auditRecord.firstPickupTime).isSame(currentDate, 'day')) {
+        console.log(`Updating first pickup time for ${driverName} at ${istTime}`);
+
+        if (auditRecord) {
+            // Update the first pickup time for the driver on the first status update of the day
+            auditRecord.firstPickupTime = istTime;
+            await auditRecord.save();
+        } else {
+            // If no record exists for the driver, create one
+            await Audit.create({
+                username: driverName,
+                loginTime: istTime,
+                firstPickupTime: istTime
+            });
+        }
+    } else {
+        console.log(`First pickup time already set for ${driverName} today.`);
+    }
+};
+
 
 
 const updatePickupStatus = async (req, res) => {
@@ -915,7 +955,6 @@ const updatePickupStatus = async (req, res) => {
             return res.status(400).json({ message: 'SKU and Order Code are required' });
         }
 
-        // Find the document matching the SKU and orderCode to retrieve the driver name
         const routeDocument = await Route.findOne({ line_item_sku: sku, FINAL: orderCode });
 
         if (!routeDocument) {
@@ -923,15 +962,18 @@ const updatePickupStatus = async (req, res) => {
         }
 
         const driverName = routeDocument['Driver Name'];
-
-        // Check if the Lock_Status for all documents of the driver is 'close'
         const allLocked = await Route.countDocuments({ 'Driver Name': driverName, Lock_Status: { $ne: 'close' } }) === 0;
 
         if (allLocked) {
             return res.status(403).json({ message: 'Pickup status cannot be changed, all routes for this driver are locked.' });
         }
 
-        // Update the pickup status if the driver is not locked
+        const { istDate } = getISTTime(); // Get current IST time
+
+        // Set the first pickup time on the first API call for this driver today
+        await setFirstPickupTime(driverName, istDate);
+
+        // Update the pickup status in the Route document
         const result = await Route.updateOne(
             { line_item_sku: sku, FINAL: orderCode },
             { $set: { Pickup_Status: status } }
@@ -946,7 +988,7 @@ const updatePickupStatus = async (req, res) => {
         console.error('Error updating pickup status:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
-}
+};
 
 
 
@@ -978,14 +1020,17 @@ const updatePickupStatusBulk = async (req, res) => {
     const { sellerName, driverName, finalCode, status } = req.body;
 
     try {
-        // Check if all documents for the driver have Lock_Status set to 'close'
         const allLocked = await Route.countDocuments({ 'Driver Name': driverName, Lock_Status: { $ne: 'close' } }) === 0;
 
         if (allLocked) {
             return res.status(403).json({ message: 'Pickup status cannot be changed, all routes for this driver are locked.' });
         }
 
-        // Proceed with bulk update if the driver is not locked
+        const { istDate } = getISTTime(); // Get current IST time
+
+        // Set the first pickup time on the first API call for this driver today
+        await setFirstPickupTime(driverName, istDate);
+
         const result = await Route.updateMany(
             { seller_name: sellerName, "Driver Name": driverName, FINAL: finalCode },
             { $set: { Pickup_Status: status } }
@@ -1000,8 +1045,7 @@ const updatePickupStatusBulk = async (req, res) => {
         console.error('Error updating pickup status in bulk:', error);
         res.status(500).json({ error: 'Failed to update pickup status in bulk.' });
     }
-}
-
+};
 
 
 const updateReturnsDeliveryStatusBulk = async (req, res) => {
