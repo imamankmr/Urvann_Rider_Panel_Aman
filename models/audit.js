@@ -9,13 +9,13 @@ const auditSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    lastUpdatedStatusTime: {
-        type: Date,
-        default: null  // We will update this on logout
-    },
     firstPickupTime: { 
         type: Date,
         default: null 
+    },
+    lastUpdatedStatusTime: {
+        type: Date,
+        default: null  // We will update this on logout
     }
 });
 
