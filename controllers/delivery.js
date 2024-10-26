@@ -200,7 +200,10 @@ const getISTTime = () => {
 
 const updateDeliveryStatus = async (req, res) => {
     const { customerName } = req.params;
-    const { deliveryStatus, driverName } = req.body; // Take driverName from req.body
+    const { deliveryStatus, driverName } = req.body;
+
+    // Define `username` as `driverName`
+    const username = driverName;
 
     try {
         // Check for locked statuses only for the specific driver
@@ -208,9 +211,12 @@ const updateDeliveryStatus = async (req, res) => {
             Lock_Status: "Open", 
             "Driver Name": driverName // Add the driverName condition
         });
+        
+        //console.log("Locked Statuses found:", lockedStatuses.length);
 
         // If any locked statuses are found, send a 401 response
         if (lockedStatuses.length > 0) {
+            //console.log("Returning 401: Locked statuses are open.");
             return res.status(401).send('Please submit pickup before proceeding');
         }
 
@@ -222,7 +228,12 @@ const updateDeliveryStatus = async (req, res) => {
             },
             { $set: { metafield_delivery_status: deliveryStatus } }
         );
+
+        //console.log("Update result:", result);
+
+        // If no documents matched, send a 404 response
         if (result.matchedCount === 0) {
+            //console.log("Returning 404: No records found to update.");
             return res.status(404).send('No records found to update');
         }
 
@@ -233,23 +244,27 @@ const updateDeliveryStatus = async (req, res) => {
         const auditRecord = await Audit.findOne({ username }).sort({ loginTime: -1 });
 
         if (auditRecord) {
+            //console.log("Audit record found. Checking lastUpdatedStatusTime...");
+
             // If the last updated status time is earlier than the current update time, update it
             if (!auditRecord.lastUpdatedStatusTime || new Date(auditRecord.lastUpdatedStatusTime) < new Date(istDate)) {
                 auditRecord.lastUpdatedStatusTime = istDate; // Set the last update time as istDate (Date object)
                 await auditRecord.save(); // Save the audit record with updated time
+                //console.log("Audit record updated with new lastUpdatedStatusTime:", istDate);
             }
         } else {
+            //console.log("Returning 404: No audit record found for this rider.");
             return res.status(404).send('No audit record found for this rider');
         }
 
+        // Successful update
+        //console.log("Returning 200: Delivery status updated successfully.");
         res.status(200).send('Delivery status updated successfully');
     } catch (error) {
-        console.error(error);
+        //console.error("Error in updateDeliveryStatus API:", error);
         res.status(500).send('Server error');
     }
 };
-
-
 
 
 module.exports = {

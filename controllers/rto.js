@@ -140,6 +140,9 @@ const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params;
     const { deliveryStatus, username } = req.body;
 
+    // Set driverName to username if driverName is not passed separately
+    const driverName = username;
+
     // Validate if deliveryStatus is present
     if (!deliveryStatus) {
         return res.status(400).send('Delivery status is required');
