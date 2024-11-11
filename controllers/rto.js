@@ -138,10 +138,10 @@ const getISTTime = () => {
 
 const updateRTOStatus = async (req, res) => {
     const { customerName, orderType } = req.params;
-    const { deliveryStatus, username } = req.body;
+    const { deliveryStatus, driverName } = req.body;
 
     // Set driverName to username if driverName is not passed separately
-    const driverName = username;
+    const username = driverName;
 
     // Validate if deliveryStatus is present
     if (!deliveryStatus) {
@@ -192,6 +192,8 @@ const updateRTOStatus = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+
+
 
 module.exports = {
     rtoData,

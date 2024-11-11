@@ -74,12 +74,12 @@ const loginUser = async (req, res) => {
 
         if (!existingLogin) {
             // If no login for today exists, create a new document
-            await Audit.create({
-                username,            // Save the username
-                loginTime: istDate,  // Save the IST time as a Date object (it will be saved as UTC in MongoDB)
-                istFormattedTime: istFormatted,  // Save formatted IST time for reference
-                logoutTime: null,    // We'll update this on logout
-            });
+                await Audit.create({
+                    username,
+                    loginTime: istDate,
+                    firstPickupTime: null, // Place this before lastUpdatedStatusTime
+                    lastUpdatedStatusTime: null
+                });
         }
 
         // Send the token and formatted login time
