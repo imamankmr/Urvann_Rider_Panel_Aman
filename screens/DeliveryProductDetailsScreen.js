@@ -9,12 +9,13 @@ const ProductDetailsScreen = ({ route }) => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { order_code, metafield_order_type } = route.params;
+  const { order_code, metafield_order_type, driverName } = route.params;
 
   const fetchProductDetails = async () => {
     try {
       const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
         params: {
+          driverName: driverName,
           order_code: order_code,
           metafield_order_type: metafield_order_type,
         },
