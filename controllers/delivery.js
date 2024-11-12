@@ -85,10 +85,10 @@ const customers = async (req, res) => {
         });
 
         // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([order_code, { _id, name, items, address, total_quantity, phone, metafield_delivery_status }]) => ({
+        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_delivery_status }]) => ({
             _id,
+            name,         // This will be the name of the customer
             order_code,
-            name,          // This will be the name of the customer
             items,
             address,
             total_quantity,
@@ -106,17 +106,15 @@ const customers = async (req, res) => {
 const deliveryProductDetails = async (req, res) => {
     try {
         // Extract query parameters
-        const { order_code, metafield_order_type, driverName } = req.query;
+        const { order_code, metafield_order_type } = req.query;
 
-        // Check if required parameters are missing
-        if (!order_code || !driverName) {
-            return res.status(400).json({ message: 'Missing required query parameters: order_code and driverName' });
+        // Check if the required parameter 'order_code' is missing
+        if (!order_code) {
+            return res.status(400).json({ message: 'Missing required query parameter: order_code' });
         }
 
-        // Construct the query object with required filters
-        const query = { FINAL: order_code, 'Driver Name': driverName };
-        
-        // Include metafield_order_type in the query if it's provided
+        // Construct the query object, making metafield_order_type optional
+        const query = { FINAL: order_code };
         if (metafield_order_type) {
             query.metafield_order_type = metafield_order_type;
         }
