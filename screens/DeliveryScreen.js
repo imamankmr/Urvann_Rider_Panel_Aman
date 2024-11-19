@@ -558,7 +558,7 @@ const DeliveryScreen = ({ route }) => {
                     fontWeight: 'bold',
                     color: '#287238'
                   }}>
-                    Products - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
+                    Item{productsCounts[item.order_code] !== undefined && productsCounts[item.order_code] <= 1 ? "" : "s"} - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
                   </Text>
                 </View>
                 {/* <TouchableOpacity style={deliveryStyles.dragHandle} onLongPress={drag}>
@@ -638,7 +638,7 @@ const DeliveryScreen = ({ route }) => {
                     fontWeight: 'bold',
                     color: '#287238'
                   }}>
-                    Products - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
+                    Item{productsCounts[item.order_code] !== undefined && productsCounts[item.order_code] <= 1 ? "" : "s"} - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
                   </Text>
                 </View>
               </View>
