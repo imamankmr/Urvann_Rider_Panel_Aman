@@ -134,7 +134,14 @@ const DeliveryScreen = ({ route }) => {
         },
       });
       // console.log(response.data.length);
-      return response.data.length;
+
+      let count = 0;
+      for (const item of response.data) {
+        count += item.total_item_quantity;
+      }
+      // console.log(count);
+
+      return count;
     } catch (err) {
       setError('Error fetching product count');
       return 0;
