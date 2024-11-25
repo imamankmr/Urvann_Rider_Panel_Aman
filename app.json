@@ -2,7 +2,7 @@
   "expo": {
     "name": "Urvann Raahi",
     "slug": "Urvann_Rider_Panel",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sharmaharsh634.Urvann_Rider_Panel",
-      "versionCode": 4
+      "versionCode": 5
     },
     "web": {
       "favicon": "./assets/favicon.png"
