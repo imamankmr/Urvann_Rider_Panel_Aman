@@ -74,6 +74,7 @@ const customers = async (req, res) => {
                     address: route.shipping_address_address,
                     total_quantity: route.total_item_quantity, // Initialize with current quantity
                     phone: route.shipping_address_phone,
+                    Alternate_number: route.Alternate_number,
                     metafield_delivery_status: route.metafield_delivery_status || '' // Fetch the status
                 });
             } else {
@@ -85,7 +86,7 @@ const customers = async (req, res) => {
         });
 
         // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, metafield_delivery_status }]) => ({
+        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, Alternate_number, metafield_delivery_status }]) => ({
             _id,
             name,         // This will be the name of the customer
             order_code,
@@ -93,6 +94,7 @@ const customers = async (req, res) => {
             address,
             total_quantity,
             phone,
+            Alternate_number,
             metafield_delivery_status, // Include status in response
         }));
 

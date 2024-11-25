@@ -134,7 +134,14 @@ const DeliveryScreen = ({ route }) => {
         },
       });
       // console.log(response.data.length);
-      return response.data.length;
+
+      let count = 0;
+      for (const item of response.data) {
+        count += item.total_item_quantity;
+      }
+      // console.log(count);
+
+      return count;
     } catch (err) {
       setError('Error fetching product count');
       return 0;
@@ -164,10 +171,38 @@ const DeliveryScreen = ({ route }) => {
     Linking.openURL(url);
   };
 
-  const makeCall = (phoneNumber) => {
-    const cleanedNumber = phoneNumber.startsWith('91') ? phoneNumber.slice(2) : phoneNumber;
-    Linking.openURL(`tel:${cleanedNumber}`);
+  const makeCall = (phoneNumber, alternateNumber) => {
+    // Build the options dynamically based on the availability of alternateNumber
+    const options = [
+      {
+        text: phoneNumber,
+        onPress: () => {
+          const cleanedNumber = phoneNumber.startsWith('91') ? phoneNumber.slice(2) : phoneNumber;
+          Linking.openURL(`tel:${cleanedNumber}`);
+        }
+      }
+    ];
+  
+    if (alternateNumber) {
+      options.push({
+        text: alternateNumber,
+        onPress: () => {
+          const cleanedNumber = alternateNumber.startsWith('91') ? alternateNumber.slice(2) : alternateNumber;
+          Linking.openURL(`tel:${cleanedNumber}`);
+        }
+      });
+    }
+  
+    // Add the cancel option
+    options.push({
+      text: "Cancel",
+      style: "cancel"
+    });
+  
+    // Show the action sheet
+    Alert.alert("Call Customer", null, options);
   };
+  
 
   const handleDeliveryInputChange = (id, text) => {
     const value = text.replace(/[^0-9]/g, ''); // Remove non-numeric characters
@@ -548,7 +583,7 @@ const DeliveryScreen = ({ route }) => {
                   <TouchableOpacity onPress={() => openMap(item.address)} style={deliveryStyles.iconButton}>
                     <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => makeCall(item.phone)} style={deliveryStyles.iconButton}>
+                  <TouchableOpacity onPress={() => makeCall(item.phone, item.Alternate_number)} style={deliveryStyles.iconButton}>
                     <FontAwesome name="phone" size={35} color="#287238" />
                   </TouchableOpacity>
                 </View>
@@ -558,7 +593,7 @@ const DeliveryScreen = ({ route }) => {
                     fontWeight: 'bold',
                     color: '#287238'
                   }}>
-                    Products - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
+                    Item{productsCounts[item.order_code] !== undefined && productsCounts[item.order_code] <= 1 ? "" : "s"} - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
                   </Text>
                 </View>
                 {/* <TouchableOpacity style={deliveryStyles.dragHandle} onLongPress={drag}>
@@ -638,7 +673,7 @@ const DeliveryScreen = ({ route }) => {
                     fontWeight: 'bold',
                     color: '#287238'
                   }}>
-                    Products - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
+                    Item{productsCounts[item.order_code] !== undefined && productsCounts[item.order_code] <= 1 ? "" : "s"} - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
                   </Text>
                 </View>
               </View>
