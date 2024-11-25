@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl, ActionSheetIOS, Platform } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
@@ -172,37 +172,47 @@ const DeliveryScreen = ({ route }) => {
   };
 
   const makeCall = (phoneNumber, alternateNumber) => {
-    // Build the options dynamically based on the availability of alternateNumber
-    const options = [
-      {
-        text: phoneNumber,
-        onPress: () => {
-          const cleanedNumber = phoneNumber.startsWith('91') ? phoneNumber.slice(2) : phoneNumber;
-          Linking.openURL(`tel:${cleanedNumber}`);
-        }
-      }
+    // Clean numbers for dialing
+    const cleanNumber = (number) => (number.startsWith('91') ? number.slice(2) : number);
+  
+    const options = [phoneNumber];
+    const actions = [
+      () => Linking.openURL(`tel:${cleanNumber(phoneNumber)}`),
     ];
   
     if (alternateNumber) {
-      options.push({
-        text: alternateNumber,
-        onPress: () => {
-          const cleanedNumber = alternateNumber.startsWith('91') ? alternateNumber.slice(2) : alternateNumber;
-          Linking.openURL(`tel:${cleanedNumber}`);
-        }
-      });
+      options.push(alternateNumber);
+      actions.push(() => Linking.openURL(`tel:${cleanNumber(alternateNumber)}`));
     }
   
-    // Add the cancel option
-    options.push({
-      text: "Cancel",
-      style: "cancel"
-    });
+    options.push("Cancel");
+    actions.push(() => {});
   
-    // Show the action sheet
-    Alert.alert("Call Customer", null, options);
+    if (Platform.OS === "ios") {
+      // For iOS devices
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: options.length - 1,
+          title: "Call Customer",
+        },
+        (buttonIndex) => {
+          if (actions[buttonIndex]) actions[buttonIndex]();
+        }
+      );
+    } else {
+      // For Android devices, use the default alert
+      Alert.alert(
+        "Call Customer",
+        null,
+        options.map((option, index) => ({
+          text: option,
+          onPress: actions[index],
+          style: index === options.length - 1 ? "cancel" : "default",
+        }))
+      );
+    }
   };
-  
 
   const handleDeliveryInputChange = (id, text) => {
     const value = text.replace(/[^0-9]/g, ''); // Remove non-numeric characters
