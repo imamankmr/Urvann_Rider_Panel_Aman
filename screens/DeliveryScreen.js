@@ -11,24 +11,35 @@ import RefreshButton from '../components/RefeshButton';
 const PhoneNumberModal = ({ visible = false, phoneNumber, alternateNumber, onClose }) => {
   if (!visible) return null;
 
+  const handleCall = (number) => {
+    if (number) {
+      Linking.openURL(`tel:${number}`);
+    }
+  };
+
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={callModalStyles.modalBackdrop}>
         <View style={callModalStyles.modalContainer}>
-          <Text style={callModalStyles.title}>Phone number</Text>
 
-          <Text style={{ fontSize: 15, color: 'gray', fontWeight: '800' }}>
-            {phoneNumber || 'Not available'}
-          </Text>
+          <TouchableOpacity onPress={() => handleCall(phoneNumber)}>
+            <Text style={callModalStyles.title}>Phone number</Text>
 
-          {alternateNumber && <>
-            <Text style={{ marginTop: 8, fontSize: 15, fontWeight: '600' }}>
-              Alternate Number
+            <Text style={{ fontSize: 15, color: 'gray', fontWeight: '800' }}>
+              {phoneNumber || 'Not available'}
             </Text>
-            <Text style={{ fontSize: 14, fontWeight: '600' }}>
-              {alternateNumber}
-            </Text>
-          </>}
+          </TouchableOpacity>
+
+          {alternateNumber &&
+            <TouchableOpacity onPress={() => handleCall(alternateNumber)}>
+              <Text style={{ marginTop: 12, fontSize: 18, fontWeight: '800' }}>
+                Alternate number
+              </Text>
+              <Text style={{ marginTop: 8, fontSize: 15, color: 'gray', fontWeight: '800' }}>
+                {alternateNumber}
+              </Text>
+            </TouchableOpacity>
+          }
 
           <View style={{ flexDirection: 'row', gap: 30 }}>
             <TouchableOpacity style={callModalStyles.cancelButton} onPress={onClose}>
@@ -1008,9 +1019,9 @@ const callModalStyles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 8,
   },
   cancelButton: {
     marginTop: 15,
