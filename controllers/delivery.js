@@ -50,6 +50,8 @@ const customers = async (req, res) => {
         // Define the filter conditions for Delivery_Status
         const filterConditions = [
             { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
+            { 'metafield_order_type': null }, // metafield_order_type is null
+            { 'metafield_order_type': '' }, // metafield_order_type is an empty string
             { 'metafield_order_type': 'Replacement' }
         ];
 
@@ -164,9 +166,6 @@ const deliveryProductDetails = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
-
-
 
 // const updateDeliveryStatus = async (req, res) => {
 //     const { customerName } = req.params;
