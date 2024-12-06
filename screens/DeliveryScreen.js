@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl } from 'react-native';
+import { Modal, View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl, ActionSheetIOS, Platform } from 'react-native';
 import axios from 'axios';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
@@ -7,6 +7,53 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
 import RefreshButton from '../components/RefeshButton';
+
+const PhoneNumberModal = ({ visible = false, phoneNumber, alternateNumber, onClose }) => {
+  if (!visible) return null;
+
+  const handleCall = (number) => {
+    if (number) {
+      Linking.openURL(`tel:${number}`);
+    }
+  };
+
+  return (
+    <Modal transparent visible={visible} animationType="fade">
+      <View style={callModalStyles.modalBackdrop}>
+        <View style={callModalStyles.modalContainer}>
+
+          <TouchableOpacity onPress={() => handleCall(phoneNumber)}>
+            <Text style={callModalStyles.title}>Phone number</Text>
+
+            <Text style={{ fontSize: 15, color: 'gray', fontWeight: '800' }}>
+              {phoneNumber || 'Not available'}
+            </Text>
+          </TouchableOpacity>
+
+          {alternateNumber &&
+            <TouchableOpacity onPress={() => handleCall(alternateNumber)}>
+              <Text style={{ marginTop: 12, fontSize: 18, fontWeight: '800' }}>
+                Alternate number
+              </Text>
+              <Text style={{ marginTop: 8, fontSize: 15, color: 'gray', fontWeight: '800' }}>
+                {alternateNumber}
+              </Text>
+            </TouchableOpacity>
+          }
+
+          <View style={{ flexDirection: 'row', gap: 30 }}>
+            <TouchableOpacity style={callModalStyles.cancelButton} onPress={onClose}>
+              <Text style={callModalStyles.cancelText}>CLOSE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={callModalStyles.cancelButton} onPress={onClose}>
+              <Text style={callModalStyles.cancelText}>ADD TO CONTACTS</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  )
+};
 
 const DeliveryScreen = ({ route }) => {
   const [deliveryCustomers, setDeliveryCustomers] = useState([]);
@@ -20,6 +67,10 @@ const DeliveryScreen = ({ route }) => {
   const [rtoUserInputs, setRtoUserInputs] = useState({});
   const [rtoStatuses, setRtoStatuses] = useState({});
   const [rtoLockedStatuses, setRtoLockedStatuses] = useState({}); // Add state to track locked statuses
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState(null);
+  const [alternateNumber, setAlternateNumber] = useState(null);
 
   const driverName = route.params.driverName;
   const navigation = useNavigation();
@@ -172,37 +223,52 @@ const DeliveryScreen = ({ route }) => {
   };
 
   const makeCall = (phoneNumber, alternateNumber) => {
-    // Build the options dynamically based on the availability of alternateNumber
-    const options = [
-      {
-        text: phoneNumber,
-        onPress: () => {
-          const cleanedNumber = phoneNumber.startsWith('91') ? phoneNumber.slice(2) : phoneNumber;
-          Linking.openURL(`tel:${cleanedNumber}`);
-        }
-      }
-    ];
-  
-    if (alternateNumber) {
-      options.push({
-        text: alternateNumber,
-        onPress: () => {
-          const cleanedNumber = alternateNumber.startsWith('91') ? alternateNumber.slice(2) : alternateNumber;
-          Linking.openURL(`tel:${cleanedNumber}`);
-        }
-      });
-    }
-  
-    // Add the cancel option
-    options.push({
-      text: "Cancel",
-      style: "cancel"
-    });
-  
-    // Show the action sheet
-    Alert.alert("Call Customer", null, options);
+    setPhoneNumber(phoneNumber);
+    setAlternateNumber(alternateNumber);
+
+    setModalVisible(true);
+
+    // // Clean numbers for dialing
+    // const cleanNumber = (number) => (number.startsWith('91') ? number.slice(2) : number);
+
+    // const options = [phoneNumber];
+    // const actions = [
+    //   () => Linking.openURL(`tel:${cleanNumber(phoneNumber)}`),
+    // ];
+
+    // if (alternateNumber) {
+    //   options.push(alternateNumber);
+    //   actions.push(() => Linking.openURL(`tel:${cleanNumber(alternateNumber)}`));
+    // }
+
+    // options.push("Cancel");
+    // actions.push(() => {});
+
+    // if (Platform.OS === "ios") {
+    //   // For iOS devices
+    //   ActionSheetIOS.showActionSheetWithOptions(
+    //     {
+    //       options,
+    //       cancelButtonIndex: options.length - 1,
+    //       title: "Phone number",
+    //     },
+    //     (buttonIndex) => {
+    //       if (actions[buttonIndex]) actions[buttonIndex]();
+    //     }
+    //   );
+    // } else {
+    //   // For Android devices, use the default alert
+    //   Alert.alert(
+    //     "Phone number",
+    //     null,
+    //     options.map((option, index) => ({
+    //       text: option,
+    //       onPress: actions[index],
+    //       style: "default",
+    //     }))
+    //   );
+    // }
   };
-  
 
   const handleDeliveryInputChange = (id, text) => {
     const value = text.replace(/[^0-9]/g, ''); // Remove non-numeric characters
@@ -663,7 +729,7 @@ const DeliveryScreen = ({ route }) => {
                   <TouchableOpacity onPress={() => openMap(item.address)} style={rtoStyles.iconButton}>
                     <MaterialCommunityIcons name="map-marker-outline" size={35} color="#287238" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => makeCall(item.phone)} style={rtoStyles.iconButton}>
+                  <TouchableOpacity onPress={() => makeCall(item.phone, item.Alternate_number)} style={rtoStyles.iconButton}>
                     <FontAwesome name="phone" size={35} color="#287238" />
                   </TouchableOpacity>
                 </View>
@@ -682,6 +748,14 @@ const DeliveryScreen = ({ route }) => {
         }}
       //onDragEnd={handleDragEnd}
       />
+
+      <PhoneNumberModal
+        visible={modalVisible}
+        phoneNumber={phoneNumber}
+        alternateNumber={alternateNumber}
+        onClose={() => setModalVisible(false)}  // Close modal when triggered
+      />
+
       <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
@@ -926,6 +1000,36 @@ const pickerSelectStyles = StyleSheet.create({
   },
   placeholder: {
     color: '#aaa',
+  },
+});
+
+const callModalStyles = StyleSheet.create({
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    width: 300,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'flex-start',
+    elevation: 5,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  cancelButton: {
+    marginTop: 15,
+    alignItems: 'flex-start',
+  },
+  cancelText: {
+    color: '#28a745',
+    fontSize: 16,
   },
 });
 
