@@ -9,38 +9,50 @@ const ProductDetailsScreen = ({ route }) => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { order_code, metafield_order_type } = route.params;
+  // Extract parameters from the route
+  const { order_code, metafield_order_type, driverName } = route.params;
 
+  // Fetch product details from the API
   const fetchProductDetails = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
+     
+    
+      const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details-v1`, {
         params: {
           order_code: order_code,
-          metafield_order_type: metafield_order_type,
+          // metafield_order_type: metafield_order_type,
+          driverName,
         },
       });
+      
       setProducts(response.data);
       setLoading(false);
     } catch (err) {
-      setError('Error fetching product details');
+      console.error('API Error:', err);
+      setError(err.response?.data?.message || 'Error fetching product details');
       setLoading(false);
     }
   };
+  
 
+  // Fetch product details on component mount and whenever dependencies change
   useEffect(() => {
     fetchProductDetails();
-  }, [order_code, metafield_order_type]);
+  }, [order_code, driverName]);
 
+  // Refresh handler
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchProductDetails();
     setRefreshing(false);
   };
 
+  // Show a loading indicator while fetching data
   if (loading) {
     return <ActivityIndicator size="large" color="#287238" />;
   }
 
+  // Show an error message if the fetch fails
   if (error) {
     return <Text>{error}</Text>;
   }
@@ -50,26 +62,38 @@ const ProductDetailsScreen = ({ route }) => {
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
     >
-      {products && products.length > 0 && products.map((product) => (
-        <View style={styles.productContainer} key={product.line_item_name + "-" + product.line_item_sku}>
-          <Image source={{ uri: product.image1 }} style={styles.image} />
-          <View style={styles.textContainer}>
-            <Text style={styles.text}>
-              <Text style={styles.label}>Name: </Text>{product.line_item_name}
-            </Text>
-            <Text style={[styles.text, styles.noMargin]}>
-              <Text style={styles.label}>SKU: </Text>{product.line_item_sku}
-            </Text>
-            <Text style={styles.text}>
-              <Text style={styles.label}>Quantity: </Text>{product.total_item_quantity}
-            </Text>
-            {/* Displaying pickup status without label */}
-            <Text style={[styles.text, product.pickup_status === "Picked" ? styles.pickedStatus : styles.notPickedStatus]}>
-              {product.pickup_status}
-            </Text>
+      {products && products.length > 0 ? (
+        products.map((product) => (
+          <View
+            style={styles.productContainer}
+            key={product.line_item_name + "-" + product.line_item_sku}
+          >
+            <Image source={{ uri: product.image1 }} style={styles.image} />
+            <View style={styles.textContainer}>
+              <Text style={styles.text}>
+                <Text style={styles.label}>Name: </Text>{product.line_item_name}
+              </Text>
+              <Text style={[styles.text, styles.noMargin]}>
+                <Text style={styles.label}>SKU: </Text>{product.line_item_sku}
+              </Text>
+              <Text style={styles.text}>
+                <Text style={styles.label}>Quantity: </Text>{product.total_item_quantity}
+              </Text>
+              {/* Displaying pickup status without label */}
+              <Text
+                style={[
+                  styles.text,
+                  product.Pickup_Status === "Picked" ? styles.pickedStatus : styles.notPickedStatus,
+                ]}
+              >
+                {product.Pickup_Status}
+              </Text>
+            </View>
           </View>
-        </View>
-      ))}
+        ))
+      ) : (
+        <Text>No products found.</Text>
+      )}
     </ScrollView>
   );
 };

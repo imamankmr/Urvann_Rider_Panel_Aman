@@ -9,7 +9,7 @@ const ProductDetailsScreen = ({ route }) => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { order_code, metafield_order_type } = route.params;
+  const { order_code, metafield_order_type, driverName } = route.params;
 
   const fetchProductDetails = async () => {
     try {
@@ -17,8 +17,10 @@ const ProductDetailsScreen = ({ route }) => {
         params: {
           order_code: order_code,
           metafield_order_type: metafield_order_type,
+          driverName,
         },
       });
+      
       setProducts(response.data);
       setLoading(false);
     } catch (err) {

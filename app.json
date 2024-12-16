@@ -21,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sharmaharsh634.Urvann_Rider_Panel",
-      "versionCode": 5
+      "versionCode": 6
     },
     "web": {
       "favicon": "./assets/favicon.png"

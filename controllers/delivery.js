@@ -2,46 +2,6 @@ const Route = require('../models/route');
 const Photo = require('../models/photo');
 const Audit = require('../models/audit');
 const moment = require('moment-timezone'); // Import moment-timezone
-// const customers = async (req, res) => {
-//     try {
-//         const { driverName } = req.params;
-//         const routes = await Route.find({ 'Driver Name': driverName });
-
-//         if (routes.length === 0) {
-//             return res.status(404).json({ message: 'No customers found for this driver' });
-//         }
-
-//         // Create a map to ensure unique customers
-//         const customerMap = new Map();
-
-//         routes.forEach(route => {
-//             if (!customerMap.has(route.shipping_address_full_name)) {
-//                 customerMap.set(route.shipping_address_full_name, {
-//                     _id: route._id, // Include _id
-//                     order_code: route.FINAL,
-//                     items: route.Items,
-//                     address: route.shipping_address_address,
-//                     phone: route.shipping_address_phone,
-//                 });
-//             }
-//         });
-
-//         // Convert map to array of objects
-//         const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, phone }]) => ({
-//             _id,
-//             name,         // This will be the name of the customer
-//             order_code,
-//             items,
-//             address,
-//             phone,
-//         }));
-
-//         res.json({ customers });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ message: 'Server error' });
-//     }
-// }
 
 const customers = async (req, res) => {
     try {
@@ -50,9 +10,7 @@ const customers = async (req, res) => {
         // Define the filter conditions for Delivery_Status
         const filterConditions = [
             { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
-            { 'metafield_order_type': null }, // metafield_order_type is null
-            { 'metafield_order_type': '' }, // metafield_order_type is an empty string
-            { 'metafield_order_type': 'Replacement' }
+            { 'metafield_order_type': '' }, // Also include empty string for metafield_order_type
         ];
 
         const routes = await Route.find({
@@ -64,35 +22,35 @@ const customers = async (req, res) => {
             return res.status(404).json({ message: 'No customers found for this driver' });
         }
 
-        // Create a map to aggregate item quantities and statuses by customer
+        // Create a map to aggregate item quantities and statuses by order_code
         const customerMap = new Map();
 
         routes.forEach(route => {
-            if (!customerMap.has(route.shipping_address_full_name)) {
-                customerMap.set(route.shipping_address_full_name, {
+            if (!customerMap.has(route.FINAL)) {
+                customerMap.set(route.FINAL, {
                     _id: route._id, // Include _id
+                    name: route.shipping_address_full_name,
                     order_code: route.FINAL,
-                    items: route.Items,
+                    //items: route.Items,
                     address: route.shipping_address_address,
                     total_quantity: route.total_item_quantity, // Initialize with current quantity
                     phone: route.shipping_address_phone,
-                    Alternate_number: route.Alternate_number,
+                    Alternate_number: route['Alternate phone number'],
                     metafield_delivery_status: route.metafield_delivery_status || '' // Fetch the status
                 });
             } else {
-                // Aggregate quantity for the existing customer
-                const existing = customerMap.get(route.shipping_address_full_name);
+                // Aggregate quantity for the existing order_code
+                const existing = customerMap.get(route.FINAL);
                 existing.total_quantity += route.total_item_quantity;
-                customerMap.set(route.shipping_address_full_name, existing);
+                customerMap.set(route.FINAL, existing);
             }
         });
 
         // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([name, { _id, order_code, items, address, total_quantity, phone, Alternate_number, metafield_delivery_status }]) => ({
+        const customers = Array.from(customerMap.entries()).map(([order_code, { _id, order_code: code,name, address, total_quantity, phone, Alternate_number, metafield_delivery_status }]) => ({
             _id,
-            name,         // This will be the name of the customer
-            order_code,
-            items,
+            order_code: code, // Use order_code as the key
+            name,
             address,
             total_quantity,
             phone,
@@ -100,12 +58,78 @@ const customers = async (req, res) => {
             metafield_delivery_status, // Include status in response
         }));
 
+
         res.json({ customers }); // Return the customers with aggregated quantity and status
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 }
+
+const deliveryProductDetailsv1 = async (req, res) => {
+    try {
+        const { order_code, driverName } = req.query;
+
+        if (!order_code || !driverName) {
+            return res.status(400).json({ message: 'Missing required query parameters: order_code or driverName' });
+        }
+
+        // Query to fetch only the required fields
+        const query = { FINAL: order_code, 'Driver Name': driverName };
+        const fieldsToSelect = 'line_item_sku line_item_name total_item_quantity Pickup_Status metafield_order_type';
+        const routeDetailsList = await Route.find(query, fieldsToSelect).lean();
+
+        if (!routeDetailsList || !routeDetailsList.length) {
+            return res.status(404).json({ message: 'No data found for the given query' });
+        }
+
+        // Filter out records with specific metafield_order_type values
+        const filteredRouteDetailsList = routeDetailsList.filter(routeDetails =>
+            routeDetails.metafield_order_type !== 'Replacement' &&
+            routeDetails.metafield_order_type !== 'Reverse Pickup'
+        );
+
+        if (!filteredRouteDetailsList.length) {
+            return res.status(404).json({ message: 'No data available after filtering' });
+        }
+
+        // Collect SKUs for batch fetching
+        const skus = filteredRouteDetailsList.map(routeDetails => routeDetails.line_item_sku);
+
+        // Fetch all product photos in one query
+        const photos = await Photo.find({ sku: { $in: skus } }, 'sku image_url').lean();
+
+        // Create a map of SKU to image_url for quick lookup
+        const photoMap = photos.reduce((map, photo) => {
+            map[photo.sku] = photo.image_url;
+            return map;
+        }, {});
+
+        // Calculate Delivery_item_count for documents with Pickup_Status as 'Picked'
+        // const deliveryItemCount = filteredRouteDetailsList
+        //     .filter(routeDetails => routeDetails.Pickup_Status === 'Picked')
+        //     .reduce((sum, routeDetails) => sum + Number(routeDetails.total_item_quantity), 0);
+
+        // Append photos and Delivery_item_count to each item in the filtered list
+        const updatedRouteDetailsList = filteredRouteDetailsList.map(routeDetails => ({
+            line_item_sku: routeDetails.line_item_sku,
+            line_item_name: routeDetails.line_item_name,
+            total_item_quantity: routeDetails.total_item_quantity,
+            Pickup_Status: routeDetails.Pickup_Status,
+            image1: photoMap[routeDetails.line_item_sku] || null,
+            // Delivery_item_count: deliveryItemCount,
+        }));
+
+        // Send the response
+        res.json(updatedRouteDetailsList);
+    } catch (error) {
+        console.error('Error fetching product details:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+
 
 const deliveryProductDetails = async (req, res) => {
     try {
@@ -166,6 +190,8 @@ const deliveryProductDetails = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+
 
 // const updateDeliveryStatus = async (req, res) => {
 //     const { customerName } = req.params;
@@ -272,4 +298,5 @@ module.exports = {
     customers,
     updateDeliveryStatus,
     deliveryProductDetails,
+    deliveryProductDetailsv1,
 }

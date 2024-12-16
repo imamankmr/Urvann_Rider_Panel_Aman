@@ -39,6 +39,7 @@ const rtoData = async (req, res) => {
                     total_quantity: 0,
                     phone: route.shipping_address_phone,
                     metafield_order_status: route.metafield_order_type,
+                    Alternate_number: route['Alternate phone number'],
                     metafield_delivery_status: route.metafield_delivery_status || '', // Ensure status is included
                 });
             }
@@ -67,6 +68,62 @@ const rtoData = async (req, res) => {
     }
 };
 
+
+
+const rtoProductDetailsv1 = async (req, res) => {
+    try {
+        // Extract query parameters
+        const { order_code, metafield_order_type, driverName } = req.query;
+
+        // Check if parameters are missing
+        if (!order_code || !driverName) {
+            return res.status(400).json({
+                message: 'Missing required query parameters: order_code or driverName'
+            });
+        }
+
+        // Construct the query object, making metafield_order_type optional
+        const query = { FINAL: order_code, 'Driver Name': driverName };
+        if (metafield_order_type) {
+            query.metafield_order_type = metafield_order_type;
+        }
+
+        // Fetch all route details based on the query parameters with only required fields
+        const routeDetailsList = await Route.find(query, 'line_item_sku line_item_name total_item_quantity Delivery_Status Pickup_Status metafield_order_type').lean();
+
+        if (!routeDetailsList || routeDetailsList.length === 0) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Collect all SKUs for batch fetching
+        const skus = routeDetailsList.map(routeDetails => routeDetails.line_item_sku);
+
+        // Fetch all product photos in one query
+        const productDetailsMap = await Photo.find({ sku: { $in: skus } }, 'sku image_url').lean().then(photos =>
+            photos.reduce((map, photo) => {
+                map[photo.sku] = photo.image_url || null;
+                return map;
+            }, {})
+        );
+
+        // Combine route details with product photos
+        const productDetailsList = routeDetailsList.map(routeDetails => ({
+            line_item_sku: routeDetails.line_item_sku,
+            line_item_name: routeDetails.line_item_name,
+            image1: productDetailsMap[routeDetails.line_item_sku] || null,
+            total_item_quantity: routeDetails.total_item_quantity,
+            delivery_status: routeDetails.Delivery_Status,
+            Pickup_Status: routeDetails.Pickup_Status,
+            metafield_order_type: routeDetails.metafield_order_type,
+        }));
+
+        // Send response with all product details
+        res.json(productDetailsList);
+    } catch (error) {
+        console.error('Error fetching product details:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 
 const rtoProductDetails = async (req, res) => {
@@ -125,6 +182,8 @@ const rtoProductDetails = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+
 // Function to convert current time to IST
 const getISTTime = () => {
     const istTime = moment.tz('Asia/Kolkata');  // Get current time in IST
@@ -198,5 +257,6 @@ const updateRTOStatus = async (req, res) => {
 module.exports = {
     rtoData,
     rtoProductDetails,
+    rtoProductDetailsv1,
     updateRTOStatus
 };

@@ -68,6 +68,7 @@ app.get('/api/payable/:driverName', payout.payable);
 // Endpoints for Delivery
 app.get('/api/customers/:driverName', delivery.customers);
 app.put('/api/update-delivery-status/:customerName', delivery.updateDeliveryStatus);
+app.get('/deliveryscreen/product-details-v1', delivery.deliveryProductDetailsv1);
 app.get('/deliveryscreen/product-details', delivery.deliveryProductDetails);
 
 // Endpoints for RTO
@@ -76,7 +77,7 @@ app.get('/api/rtoscreen/:driverName', rto.rtoData);
 // Define endpoint to fetch product details based on order_id
 // server.js or app.js
 app.get('/rtoscreen/product-details', rto.rtoProductDetails);
-
+app.get('/rtoscreen/product-details-v1', rto.rtoProductDetailsv1);
 
 app.put('/api/update-rto-status/:customerName/:orderType', rto.updateRTOStatus);
 

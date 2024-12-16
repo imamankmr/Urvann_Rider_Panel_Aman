@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { BACKEND_URL } from 'react-native-dotenv';
 import RefreshButton from '../components/RefeshButton';
 
+
 const PhoneNumberModal = ({ visible = false, phoneNumber, alternateNumber, onClose }) => {
   if (!visible) return null;
 
@@ -21,38 +22,38 @@ const PhoneNumberModal = ({ visible = false, phoneNumber, alternateNumber, onClo
     <Modal transparent visible={visible} animationType="fade">
       <View style={callModalStyles.modalBackdrop}>
         <View style={callModalStyles.modalContainer}>
-
-          <TouchableOpacity onPress={() => handleCall(phoneNumber)}>
+  
+          <TouchableOpacity onPress={() => handleCall(phoneNumber?.slice(-10))}>
             <Text style={callModalStyles.title}>Phone number</Text>
-
-            <Text style={{ fontSize: 15, color: 'gray', fontWeight: '800' }}>
-              {phoneNumber || 'Not available'}
+            <Text style={{ fontSize: 18, color: 'gray', fontWeight: '800' }}>
+              {phoneNumber ? phoneNumber.slice(-10) : 'Not available'}
             </Text>
           </TouchableOpacity>
-
+  
           {alternateNumber &&
-            <TouchableOpacity onPress={() => handleCall(alternateNumber)}>
+            <TouchableOpacity onPress={() => handleCall(alternateNumber?.slice(-10))}>
               <Text style={{ marginTop: 12, fontSize: 18, fontWeight: '800' }}>
                 Alternate number
               </Text>
-              <Text style={{ marginTop: 8, fontSize: 15, color: 'gray', fontWeight: '800' }}>
-                {alternateNumber}
+              <Text style={{ marginTop: 8, fontSize: 18, color: 'gray', fontWeight: '800' }}>
+                {alternateNumber.slice(-10)}
               </Text>
             </TouchableOpacity>
           }
-
+  
           <View style={{ flexDirection: 'row', gap: 30 }}>
             <TouchableOpacity style={callModalStyles.cancelButton} onPress={onClose}>
               <Text style={callModalStyles.cancelText}>CLOSE</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={callModalStyles.cancelButton} onPress={onClose}>
+            {/* <TouchableOpacity style={callModalStyles.cancelButton} onPress={onClose}>
               <Text style={callModalStyles.cancelText}>ADD TO CONTACTS</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
       </View>
     </Modal>
-  )
+  );
+  
 };
 
 const DeliveryScreen = ({ route }) => {
@@ -79,6 +80,8 @@ const DeliveryScreen = ({ route }) => {
     try {
       const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
       const fetchedCustomers = response.data.customers;
+
+      //console.log('Fetched customers:', fetchedCustomers);
 
       // Initialize user inputs, statuses, and locked statuses with fetched data
       const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
@@ -174,43 +177,92 @@ const DeliveryScreen = ({ route }) => {
     setCustomersCombinedData([...deliveryCustomers, ...rtoCustomers]);
   }, [deliveryCustomers, rtoCustomers]);
 
-  const [productsCounts, setProductsCounts] = useState({});
+//   const [productsCounts, setProductsCounts] = useState({});
 
-  const getProductsCount = async (orderCode, metafieldOrderType) => {
-    try {
-      const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
-        params: {
-          order_code: orderCode,
-          metafield_order_type: metafieldOrderType,
-        },
+//   const getProductsCount = async (orderCode, metafieldOrderType, driverName) => {
+//     try {
+//         const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details-v1`, {
+//             params: {
+//                 order_code: orderCode,
+//                 // metafield_order_type: metafieldOrderType,
+//                 driverName,
+//             },
+//         });
+
+//         let count = 0;
+//         for (const item of response.data) {
+//             if (item.Pickup_Status === 'Picked') {
+//                 console.log('suiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii:', item);
+//                 count += item.total_item_quantity;
+//             }
+//         }
+      
+
+//         return count;
+//     } catch (err) {
+//         setError('Error fetching product count');
+//         return 0;
+//     }
+// };
+
+// useEffect(() => {
+//     const fetchCounts = async () => {
+//         const counts = {};
+//         for (const item of customersCombinedData) {
+//             const count = await getProductsCount(item.order_code, item.metafield_order_status, driverName);
+//             counts[item.order_code] = count;
+//         }
+//         setProductsCounts(counts);
+//     };
+
+//     fetchCounts();
+// }, [customersCombinedData]);
+
+const [RTOCounts, setRTOCounts] = useState({});
+
+const getRTOCount = async (orderCode, metafieldOrderType, driverName) => {
+  try {
+      const response = await axios.get(`${BACKEND_URL}/rtoscreen/product-details-v1`, {
+          params: {
+              order_code: orderCode,
+              metafield_order_type: metafieldOrderType,
+              driverName,
+          },
       });
-      // console.log(response.data.length);
 
       let count = 0;
       for (const item of response.data) {
-        count += item.total_item_quantity;
+          if (!item.metafield_order_type) {
+              // If metafield_order_type is null/empty, check Pickup_Status
+              if (item.Pickup_Status === 'Picked') {
+                  count += item.total_item_quantity;
+              }
+          } else {
+              // If metafield_order_type is present, count all records
+              count += item.total_item_quantity;
+          }
       }
-      // console.log(count);
 
       return count;
-    } catch (err) {
+  } catch (err) {
+      console.error('Error fetching product count:', err);
       setError('Error fetching product count');
       return 0;
-    }
   }
+};
 
-  useEffect(() => {
-    const fetchCounts = async () => {
+useEffect(() => {
+  const fetchCounts = async () => {
       const counts = {};
       for (const item of customersCombinedData) {
-        const count = await getProductsCount(item.order_code, item.metafield_order_status);
-        counts[item.order_code] = count;
+          const count = await getRTOCount(item.order_code, item.metafield_order_status, driverName);
+          counts[item.order_code] = count;
       }
-      setProductsCounts(counts);
-    };
+      setRTOCounts(counts);
+  };
 
-    fetchCounts();
-  }, [customersCombinedData]);
+  fetchCounts();
+}, [customersCombinedData]);
 
 
   if (deliveryLoading || rtoLoading) {
@@ -228,102 +280,8 @@ const DeliveryScreen = ({ route }) => {
 
     setModalVisible(true);
 
-    // // Clean numbers for dialing
-    // const cleanNumber = (number) => (number.startsWith('91') ? number.slice(2) : number);
-
-    // const options = [phoneNumber];
-    // const actions = [
-    //   () => Linking.openURL(`tel:${cleanNumber(phoneNumber)}`),
-    // ];
-
-    // if (alternateNumber) {
-    //   options.push(alternateNumber);
-    //   actions.push(() => Linking.openURL(`tel:${cleanNumber(alternateNumber)}`));
-    // }
-
-    // options.push("Cancel");
-    // actions.push(() => {});
-
-    // if (Platform.OS === "ios") {
-    //   // For iOS devices
-    //   ActionSheetIOS.showActionSheetWithOptions(
-    //     {
-    //       options,
-    //       cancelButtonIndex: options.length - 1,
-    //       title: "Phone number",
-    //     },
-    //     (buttonIndex) => {
-    //       if (actions[buttonIndex]) actions[buttonIndex]();
-    //     }
-    //   );
-    // } else {
-    //   // For Android devices, use the default alert
-    //   Alert.alert(
-    //     "Phone number",
-    //     null,
-    //     options.map((option, index) => ({
-    //       text: option,
-    //       onPress: actions[index],
-    //       style: "default",
-    //     }))
-    //   );
-    // }
   };
 
-  const handleDeliveryInputChange = (id, text) => {
-    const value = text.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-    const maxValue = deliveryCustomers.find(c => c._id === id)?.items || 0;
-    if (value === '' || (parseInt(value, 10) <= maxValue && parseInt(value, 10) >= 0)) {
-      setDeliveryUserInputs(prev => ({
-        ...prev,
-        [id]: value
-      }));
-    }
-  };
-
-  const handleRtoInputChange = (id, text) => {
-    const value = text.replace(/[^0-9]/g, '');
-    const maxValue = rtoCustomers.find(c => c._id === id)?.items || 0;
-    if (value === '' || (parseInt(value, 10) <= maxValue && parseInt(value, 10) >= 0)) {
-      setRtoUserInputs(prev => ({ ...prev, [id]: value }));
-    }
-  };
-
-  const handleDeliveryIncrement = (id) => {
-    setDeliveryUserInputs(prev => {
-      const currentValue = parseInt(prev[id], 10);
-      const maxValue = deliveryCustomers.find(c => c._id === id)?.items || 0;
-      return {
-        ...prev,
-        [id]: Math.min(currentValue + 1, maxValue).toString()
-      };
-    });
-  };
-
-  const handleRtoIncrement = (id) => {
-    setRtoUserInputs(prev => {
-      const currentValue = parseInt(prev[id], 10) || 0;
-      const maxValue = rtoCustomers.find(c => c._id === id)?.items || 0;
-      return { ...prev, [id]: Math.min(currentValue + 1, maxValue).toString() };
-    });
-  };
-
-  const handleDeliveryDecrement = (id) => {
-    setDeliveryUserInputs(prev => {
-      const currentValue = parseInt(prev[id], 10);
-      return {
-        ...prev,
-        [id]: Math.max(currentValue - 1, 0).toString()
-      };
-    });
-  };
-
-  const handleRtoDecrement = (id) => {
-    setRtoUserInputs(prev => {
-      const currentValue = parseInt(prev[id], 10) || 0;
-      return { ...prev, [id]: Math.max(currentValue - 1, 0).toString() };
-    });
-  };
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
@@ -575,31 +533,53 @@ const DeliveryScreen = ({ route }) => {
     }
   };
 
-  const RTOnavigateToProductDetails = (orderCode, metafieldOrderType) => {
-    navigation.navigate('RTOProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType });
+  const RTOnavigateToProductDetails = (orderCode, metafieldOrderType, driverName) => {
+    navigation.navigate('RTOProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType, driverName });
   };
 
-  const DeliveryNavigateToProductDetails = (orderCode, metafieldOrderType) => {
-    navigation.navigate('DeliveryProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType });
+  const DeliveryNavigateToProductDetails = (orderCode, metafieldOrderType, driverName) => {
+    navigation.navigate('DeliveryProductDetailsScreen', { order_code: orderCode, metafield_order_type: metafieldOrderType, driverName });
   };
 
   const keyExtractor = (item) => (item.type || `type-${Math.random()}`) + "-" + (item._id?.toString() || `key-${Math.random()}`);
 
+  // Sort the customersCombinedData array
+  const sortedData = customersCombinedData.sort((a, b) => {
+    const aIsVip = a.order_code.includes('VIP') || a.order_code.includes('VVIP');
+    const bIsVip = b.order_code.includes('VIP') || b.order_code.includes('VVIP');
+    
+    if (aIsVip && !bIsVip) return -1;
+    if (!aIsVip && bIsVip) return 1;
+    return 0;
+  });
+
+
   return (
     <View style={deliveryStyles.container}>
       <DraggableFlatList
-        data={customersCombinedData}
+        data={sortedData}
         keyExtractor={keyExtractor}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         renderItem={({ item, isActive }) => {
           const statusColor = getStatusColor(deliveryStatuses[item._id]);
+          const statusColorRto = getStatusColor(rtoStatuses[item._id]);
+          const vipVvipStyle = item.order_code.includes('VIP') || item.order_code.includes('VVIP') ? { borderColor: 'red', borderWidth: 2 } : {};
+          const vipVvipStyleRTO = item.order_code.includes('VIP') || item.order_code.includes('VVIP') ? { borderColor: 'red', borderWidth: 2 } : {};
+          const orderCodeTextStyle = item.order_code.includes('VIP') || item.order_code.includes('VVIP') ? { color: 'red' } : {};
+
           // console.log(`Status for ${item.name}: ${deliveryStatuses[item._id]}, Color: ${statusColor}`);
 
           if (item.type === 'delivery') {
             return (
-              <View style={[deliveryStyles.itemContainer, { backgroundColor: statusColor }]}>
+              // Modify the View component for the item container
+              
+              <View style={[deliveryStyles.itemContainer, { backgroundColor: statusColor }, vipVvipStyle]}>
                 <View style={deliveryStyles.infoContainer}>
-                  <Text style={[deliveryStyles.orderCode, { color: 'green' }]}>{item.order_code}</Text>
+                  <Text style={[deliveryStyles.orderCode, orderCodeTextStyle]}>{item.order_code}
+                        {item.order_code.includes('VIP') || item.order_code.includes('VVIP') ? (
+                        <FontAwesome name="flag" size={20} color="red" style={{ marginLeft: 5, marginRight: 5 }} />
+                      ) : null}
+                  </Text>
                   <Text style={deliveryStyles.customerName}>{item.name}</Text>
                   <Text style={deliveryStyles.address}>{item.address}</Text>
                   <View style={deliveryStyles.pickerContainer}>
@@ -612,35 +592,10 @@ const DeliveryScreen = ({ route }) => {
                       disabled={deliveryLockedStatuses[item._id]} // Disable picker if status is locked
                     />
                   </View>
-                  {deliveryStatuses[item._id] === 'Delivered' && (
-                    <View style={deliveryStyles.textInputContainer}>
-                      <Text style={deliveryStyles.textLabel}>Item delivered:</Text>
-                      <View style={deliveryStyles.counterContainer}>
-                        <TouchableOpacity
-                          style={deliveryStyles.counterButton}
-                          onPress={() => handleDeliveryDecrement(item._id)}
-                        >
-                          <Text style={deliveryStyles.counterButtonText}>-</Text>
-                        </TouchableOpacity>
-                        <TextInput
-                          style={deliveryStyles.textInput}
-                          keyboardType="numeric"
-                          value={deliveryUserInputs[item._id]}
-                          onChangeText={(text) => handleDeliveryInputChange(item._id, text)}
-                        />
-                        <TouchableOpacity
-                          style={deliveryStyles.counterButton}
-                          onPress={() => handleDeliveryIncrement(item._id)}
-                        >
-                          <Text style={deliveryStyles.counterButtonText}>+</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={deliveryStyles.counterValue}>/{deliveryCustomers.find(c => c._id === item._id)?.items || 0}</Text>
-                    </View>
-                  )}
+                  
                   <TouchableOpacity
                     style={deliveryStyles.detailsButton}
-                    onPress={() => DeliveryNavigateToProductDetails(item.order_code, item.metafield_order_status)}
+                    onPress={() => DeliveryNavigateToProductDetails(item.order_code, item.metafield_order_status, driverName)}
                   >
                     <Text style={deliveryStyles.detailsButtonText}>View Products</Text>
                   </TouchableOpacity>
@@ -655,11 +610,12 @@ const DeliveryScreen = ({ route }) => {
                 </View>
                 <View style={{ position: "absolute", right: 15, top: 15 }}>
                   <Text style={{
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: 'bold',
                     color: '#287238'
                   }}>
-                    Item{productsCounts[item.order_code] !== undefined && productsCounts[item.order_code] <= 1 ? "" : "s"} - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
+                   Item{RTOCounts[item.order_code] !== undefined && RTOCounts[item.order_code] <= 1 ? "" : "s"} - {RTOCounts[item.order_code] !== undefined ? RTOCounts[item.order_code] : "..."}
+
                   </Text>
                 </View>
                 {/* <TouchableOpacity style={deliveryStyles.dragHandle} onLongPress={drag}>
@@ -670,11 +626,15 @@ const DeliveryScreen = ({ route }) => {
             // } else if (item.type === 'rto') {
           } else {
             return (
-              <View style={[rtoStyles.itemContainer, { backgroundColor: getStatusColor(rtoStatuses[item._id]) }]}>
+              <View style={[rtoStyles.itemContainer, { backgroundColor: statusColorRto }, vipVvipStyleRTO]}>
                 <TouchableOpacity>
                   <View style={rtoStyles.infoContainer}>
                     <View style={rtoStyles.orderCodeContainer}>
-                      <Text style={rtoStyles.orderCode}>{item.order_code}</Text>
+                      <Text style={[rtoStyles.orderCode, orderCodeTextStyle]}>{item.order_code}
+                      {item.order_code.includes('VIP') || item.order_code.includes('VVIP') ? (
+                        <FontAwesome name="flag" size={20} color="red" style={{ marginLeft: 5, marginRight: 5 }} />
+                      ) : null}
+                      </Text>
                       <Text style={rtoStyles.metafieldOrderStatus}>{item.metafield_order_status}</Text>
                     </View>
                     <Text style={rtoStyles.customerName}>{item.name}</Text>
@@ -719,7 +679,7 @@ const DeliveryScreen = ({ route }) => {
                     )}
                     <TouchableOpacity
                       style={rtoStyles.detailsButton}
-                      onPress={() => RTOnavigateToProductDetails(item.order_code, item.metafield_order_status)}
+                      onPress={() => RTOnavigateToProductDetails(item.order_code, item.metafield_order_status, driverName)}
                     >
                       <Text style={rtoStyles.detailsButtonText}>View Products</Text>
                     </TouchableOpacity>
@@ -735,11 +695,11 @@ const DeliveryScreen = ({ route }) => {
                 </View>
                 <View style={{ position: "absolute", right: 15, top: 15 }}>
                   <Text style={{
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: 'bold',
                     color: '#287238'
                   }}>
-                    Item{productsCounts[item.order_code] !== undefined && productsCounts[item.order_code] <= 1 ? "" : "s"} - {productsCounts[item.order_code] !== undefined ? productsCounts[item.order_code] : "..."}
+                    Item{RTOCounts[item.order_code] !== undefined && RTOCounts[item.order_code] <= 1 ? "" : "s"} - {RTOCounts[item.order_code] !== undefined ? RTOCounts[item.order_code] : "..."}
                   </Text>
                 </View>
               </View>
@@ -878,6 +838,8 @@ const rtoStyles = StyleSheet.create({
   },
   itemContainer: {
     ...commonItemContainer,
+    borderColor: 'orange', // Set outline color to orange
+    borderWidth: 2, // Ensure border is visible
   },
   infoContainer: {
     flex: 1,
@@ -898,7 +860,7 @@ const rtoStyles = StyleSheet.create({
   metafieldOrderStatus: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#28a745', // Consistent green color for metafield status
+    color: 'orange', // Set text color to orange
   },
   customerName: {
     fontSize: 16,
@@ -1011,12 +973,12 @@ const callModalStyles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContainer: {
-    width: 300,
+    width: 220,
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 20,
     alignItems: 'flex-start',
-    elevation: 5,
+    elevation: 10,
   },
   title: {
     fontSize: 18,
