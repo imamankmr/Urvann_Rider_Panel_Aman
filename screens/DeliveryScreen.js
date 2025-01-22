@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl, ActionSheetIOS, Platform } from 'react-native';
+import { Modal, View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Linking, Alert, RefreshControl, ActionSheetIOS, Platform, FlatList, Image } from 'react-native';
 import axios from 'axios';
+import CheckBox from '@react-native-community/checkbox';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -62,6 +63,11 @@ const DeliveryScreen = ({ route }) => {
   const [deliveryUserInputs, setDeliveryUserInputs] = useState({});
   const [deliveryStatuses, setDeliveryStatuses] = useState({});
   const [deliveryLockedStatuses, setDeliveryLockedStatuses] = useState({}); // Add state to track locked statuses
+  const [partialDeliveryModalVisible, setPartialDeliveryModalVisible] = useState(false);
+  const [selectedOrderProducts, setSelectedOrderProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [currentOrderCode, setCurrentOrderCode] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [rtoCustomers, setRtoCustomers] = useState([]);
   const [rtoLoading, setRtoLoading] = useState(true);
@@ -76,51 +82,54 @@ const DeliveryScreen = ({ route }) => {
   const driverName = route.params.driverName;
   const navigation = useNavigation();
 
+  useEffect(() => {
+    fetchDeliveryCustomers();
+  }, [refreshKey]);
+  
   const fetchDeliveryCustomers = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
-      const fetchedCustomers = response.data.customers;
+        const response = await axios.get(`${BACKEND_URL}/api/customers/${driverName}`);
+        const fetchedCustomers = response.data.customers;
 
-      //console.log('Fetched customers:', fetchedCustomers);
+        // Initialize user inputs, statuses, and locked statuses with fetched data
+        const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
+            if (customer._id) {
+                acc[customer._id] = '0';
+            }
+            return acc;
+        }, {});
 
-      // Initialize user inputs, statuses, and locked statuses with fetched data
-      const initialUserInputs = fetchedCustomers.reduce((acc, customer) => {
-        if (customer._id) {
-          acc[customer._id] = '0';
-        }
-        return acc;
-      }, {});
+        const initialStatuses = fetchedCustomers.reduce((acc, customer) => {
+            if (customer._id) {
+                acc[customer._id] = customer.metafield_delivery_status || ''; // Use API-provided status
+            }
+            return acc;
+        }, {});
 
-      const initialStatuses = fetchedCustomers.reduce((acc, customer) => {
-        if (customer._id) {
-          acc[customer._id] = customer.metafield_delivery_status || ''; // Fetch the status
-        }
-        return acc;
-      }, {});
+        const initialLockedStatuses = fetchedCustomers.reduce((acc, customer) => {
+            if (customer._id && customer.metafield_delivery_status) {
+                acc[customer._id] = true; // Lock statuses that are already set
+            }
+            return acc;
+        }, {});
 
-      const initialLockedStatuses = fetchedCustomers.reduce((acc, customer) => {
-        if (customer._id && customer.metafield_delivery_status) {
-          acc[customer._id] = true; // Lock statuses that are already set
-        }
-        return acc;
-      }, {});
+        setDeliveryUserInputs(initialUserInputs);
+        setDeliveryStatuses(initialStatuses);
+        setDeliveryLockedStatuses(initialLockedStatuses);
 
-      setDeliveryUserInputs(initialUserInputs);
-      setDeliveryStatuses(initialStatuses);
-      setDeliveryLockedStatuses(initialLockedStatuses);
+        // Add type: 'delivery' to each customer object
+        fetchedCustomers.forEach((customer) => {
+            customer.type = 'delivery';
+        });
 
-      // Add type: 'delivery' to each customer object
-      fetchedCustomers.forEach(customer => {
-        customer.type = 'delivery';
-      });
-
-      setDeliveryCustomers(fetchedCustomers);
+        setDeliveryCustomers(fetchedCustomers);
     } catch (error) {
-      console.error('Error fetching delivery customers:', error);
+        console.error('Error fetching delivery customers:', error);
     } finally {
-      setDeliveryLoading(false);
+        setDeliveryLoading(false);
     }
-  };
+};
+
 
   useEffect(() => {
     fetchDeliveryCustomers();
@@ -176,47 +185,6 @@ const DeliveryScreen = ({ route }) => {
   useEffect(() => {
     setCustomersCombinedData([...deliveryCustomers, ...rtoCustomers]);
   }, [deliveryCustomers, rtoCustomers]);
-
-//   const [productsCounts, setProductsCounts] = useState({});
-
-//   const getProductsCount = async (orderCode, metafieldOrderType, driverName) => {
-//     try {
-//         const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details-v1`, {
-//             params: {
-//                 order_code: orderCode,
-//                 // metafield_order_type: metafieldOrderType,
-//                 driverName,
-//             },
-//         });
-
-//         let count = 0;
-//         for (const item of response.data) {
-//             if (item.Pickup_Status === 'Picked') {
-//                 console.log('suiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii:', item);
-//                 count += item.total_item_quantity;
-//             }
-//         }
-      
-
-//         return count;
-//     } catch (err) {
-//         setError('Error fetching product count');
-//         return 0;
-//     }
-// };
-
-// useEffect(() => {
-//     const fetchCounts = async () => {
-//         const counts = {};
-//         for (const item of customersCombinedData) {
-//             const count = await getProductsCount(item.order_code, item.metafield_order_status, driverName);
-//             counts[item.order_code] = count;
-//         }
-//         setProductsCounts(counts);
-//     };
-
-//     fetchCounts();
-// }, [customersCombinedData]);
 
 const [RTOCounts, setRTOCounts] = useState({});
 
@@ -282,6 +250,22 @@ useEffect(() => {
 
   };
 
+  const fetchProductsForOrder = async (orderCode) => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/deliveryscreen/product-details`, {
+        params: { order_code: orderCode },
+      });
+  
+      console.log('API Response:', response.data); // Debugging log
+  
+      setSelectedOrderProducts(response.data || []);
+      setSelectedProducts(response.data.map(product => product.line_item_sku)); // Default all selected
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      Alert.alert('Error', 'Failed to fetch products for the order.');
+    }
+  };
+  
 
   const updateDeliveryStatus = async (name, deliveryStatus) => {
     try {
@@ -359,12 +343,36 @@ useEffect(() => {
     }
 
     if (deliveryLockedStatuses[id]) {
-      Alert.alert('Status Locked', 'This status cannot be changed anymore.');
+      //Alert.alert('Status Locked', 'This status cannot be changed anymore.');
       return;
     }
 
     // Confirm the status change
     const name = deliveryCustomers.find(c => c._id === id)?.name;
+    const orderCode = deliveryCustomers.find(c => c._id === id)?.order_code;
+
+    // Handle "Partially Delivered" separately
+    if (value === 'Partially Delivered' && orderCode) {
+      console.log('Preparing to open modal for:', orderCode);
+  
+      // Clear stale data and fetch new products before opening modal
+      setSelectedProducts([]); // Clear selected products
+      setPartialDeliveryModalVisible(false); // Close modal while fetching data
+  
+      fetchProductsForOrder(orderCode)
+        .then(() => {
+          setCurrentOrderCode(orderCode); // Set the current order code
+          setPartialDeliveryModalVisible(true); // Open modal after data is fetched
+        })
+        .catch((err) => {
+          console.error('Error fetching products:', err);
+          Alert.alert('Error', 'Failed to fetch product details.');
+        });
+  
+      return;
+    }
+    
+
     if (name) {
       Alert.alert(
         'Confirm Status Change',
@@ -476,6 +484,7 @@ useEffect(() => {
       case 'Z-Reverse Successful':
       case 'Z-Replacement Successful':
       case 'Z-Delivered':
+      case 'Partially Delivered':
         return '#d4edda'; // Green
       case 'Reverse Pickup Failed':
       case 'Replacement Pickup Failed':
@@ -501,6 +510,7 @@ useEffect(() => {
 
   const deliveryStatusOptions = [
     { label: 'Z-Delivered', value: 'Z-Delivered' },
+    { label: 'Partially Delivered', value: 'Partially Delivered' },
     { label: 'A-Delivery Failed (CNR)', value: 'A-Delivery Failed (CNR)' },
     { label: 'A-Delivery failed (Rescheduled)', value: 'A-Delivery failed (Rescheduled)' },
     { label: 'Z-Delivery Failed (customer cancelled)', value: 'Z-Delivery Failed (customer cancelled)' },
@@ -554,6 +564,195 @@ useEffect(() => {
   });
 
 
+  const confirmPartialDelivery = async (selectedProducts) => {
+    if (!selectedProducts || selectedProducts.length === 0) {
+      Alert.alert('Error', 'No products selected for partial delivery.');
+      return;
+    }
+  
+    try {
+      // Log the payload being sent
+      console.log('Request payload:', {
+        order_code: currentOrderCode,
+        deliveredProducts: selectedProducts,
+        driverName,
+      });
+  
+      // API call
+      const response = await axios.put(`${BACKEND_URL}/api/update-partial-delivery`, {
+        order_code: currentOrderCode,
+        deliveredProducts: selectedProducts,
+        driverName,
+      });
+  
+      // Log the backend response
+      console.log('Backend response:', response.data);
+  
+      if (response.status === 200) {
+        Alert.alert('Success', 'Partial delivery updated successfully');
+        setDeliveryStatuses((prev) => ({
+          ...prev,
+          [currentOrderCode]: 'Partially Delivered',
+        }));
+        setDeliveryLockedStatuses((prev) => ({
+          ...prev,
+          [currentOrderCode]: true,
+        }));
+        setRefreshKey((prev) => prev + 1);
+      } else if (response.status === 401) {
+        Alert.alert('Error', 'Please submit pickup before proceeding');
+      } else {
+        Alert.alert('Error', 'Failed to update partial delivery.');
+      }
+    } catch (error) {
+      console.error('Error confirming partial delivery:', error);
+      Alert.alert('Error', 'Network or server error.');
+    } finally {
+      setPartialDeliveryModalVisible(false);
+    }
+  };
+  
+  const confirmRTOPartialDelivery = async (selectedProducts) => {
+    if (!selectedProducts || selectedProducts.length === 0) {
+      Alert.alert('Error', 'No products selected for partial delivery.');
+      return;
+    }
+  
+    try {
+      // Log the payload being sent
+      console.log('Request payload:', {
+        order_code: currentOrderCode,
+        deliveredProducts: selectedProducts,
+        driverName,
+      });
+  
+      // API call
+      const response = await axios.put(`${BACKEND_URL}/api/update-partial-delivery`, {
+        order_code: currentOrderCode,
+        deliveredProducts: selectedProducts,
+        driverName,
+      });
+  
+      // Log the backend response
+      console.log('Backend response:', response.data);
+  
+      if (response.status === 200) {
+        Alert.alert('Success', 'Partial delivery updated successfully');
+        setRtoStatuses((prev) => ({
+          ...prev,
+          [currentOrderCode]: 'Partially Delivered',
+        }));
+        setRtoLockedStatuses((prev) => ({
+          ...prev,
+          [currentOrderCode]: true,
+        }));
+        setRefreshKey((prev) => prev + 1);
+      } else if (response.status === 401) {
+        Alert.alert('Error', 'Please submit pickup before proceeding');
+      } else {
+        Alert.alert('Error', 'Failed to update partial delivery.');
+      }
+    } catch (error) {
+      console.error('Error confirming partial delivery:', error);
+      Alert.alert('Error', 'Network or server error.');
+    } finally {
+      setPartialDeliveryModalVisible(false);
+    }
+  };
+
+  const PartialDeliveryModal = ({ visible, products, selectedProducts, onConfirm, onCancel, disabled }) => {
+    const [localSelectedProducts, setLocalSelectedProducts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+  
+    useEffect(() => {
+      if (visible) {
+        setIsLoading(true); // Show loading indicator while resetting data
+        setLocalSelectedProducts([...selectedProducts]);
+        setTimeout(() => setIsLoading(false), 500); // Simulate loading time
+      }
+    }, [visible, selectedProducts]);
+  
+    const toggleProductSelection = (productId) => {
+      if (localSelectedProducts.includes(productId)) {
+        setLocalSelectedProducts(localSelectedProducts.filter((id) => id !== productId));
+      } else {
+        setLocalSelectedProducts([...localSelectedProducts, productId]);
+      }
+    };
+  
+    return (
+      <Modal transparent visible={visible} animationType="slide">
+        <View style={modalStyles.backdrop}>
+          <View style={modalStyles.container}>
+            <Text style={modalStyles.title}>Select Delivered Products</Text>
+  
+            {isLoading ? (
+              <ActivityIndicator size="large" color="#287238" />
+            ) : (
+              // Wrap FlatList in a View with fixed height
+              <View style={{ flex: 1, height: 300, marginBottom: 16 }}> {/* Fixed height for the product list */}
+                <FlatList
+                  data={products}
+                  keyExtractor={(item) => item.line_item_sku}
+                  showsVerticalScrollIndicator={false}
+                  renderItem={({ item }) => {
+                    const isSelected = localSelectedProducts.includes(item.line_item_sku);
+                    return (
+                      <TouchableOpacity
+                        style={[modalStyles.productRow, isSelected && modalStyles.productRowSelected]}
+                        onPress={() => toggleProductSelection(item.line_item_sku)}
+                      >
+                        <Image
+                          source={{
+                            uri: item.image1 || 'https://via.placeholder.com/50',
+                          }}
+                          style={modalStyles.productImage}
+                          resizeMode="contain"
+                        />
+                        <View style={modalStyles.productDetails}>
+                          <Text
+                            style={modalStyles.productName}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {item.line_item_name}
+                          </Text>
+                          <Text style={modalStyles.productQuantity}>
+                            Quantity: {item.total_item_quantity}
+                          </Text>
+                        </View>
+                        <FontAwesome
+                          name={isSelected ? 'check-square' : 'square-o'}
+                          size={24}
+                          color={isSelected ? '#287238' : '#aaa'}
+                        />
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </View>
+            )}
+  
+            {/* Fixed Buttons at the Bottom */}
+            <View style={modalStyles.buttonsContainer}>
+              <TouchableOpacity onPress={onCancel} style={modalStyles.cancelButton}>
+                <Text style={modalStyles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => onConfirm(localSelectedProducts)}
+                style={modalStyles.confirmButton}
+                disabled={disabled}
+              >
+                <Text style={modalStyles.confirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );  
+  };
+  
+  
   return (
     <View style={deliveryStyles.container}>
       <DraggableFlatList
@@ -608,6 +807,17 @@ useEffect(() => {
                     <FontAwesome name="phone" size={35} color="#287238" />
                   </TouchableOpacity>
                 </View>
+                <PartialDeliveryModal
+                  visible={partialDeliveryModalVisible}
+                  products={selectedOrderProducts}
+                  selectedProducts={selectedProducts}
+                  onConfirm={(selectedProducts) => {
+                    setSelectedProducts(selectedProducts);
+                    confirmPartialDelivery(selectedProducts);
+                  }}
+                  onCancel={() => setPartialDeliveryModalVisible(false)}
+                  //disabled={deliveryLockedStatuses[selectedOrderProducts[0]._id]}
+                />
                 <View style={{ position: "absolute", right: 15, top: 15 }}>
                   <Text style={{
                     fontSize: 17,
@@ -992,6 +1202,92 @@ const callModalStyles = StyleSheet.create({
   cancelText: {
     color: '#28a745',
     fontSize: 16,
+  },
+});
+
+const modalStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  container: {
+    width: '90%',
+    height: 600, // Fixed height for the modal
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#287238',
+  },
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    overflow: 'hidden',
+  },
+  productRowSelected: {
+    backgroundColor: '#d4edda',
+  },
+  productImage: {
+    width: 50,
+    height: 50,
+    marginRight: 10,
+    borderRadius: 5,
+    backgroundColor: '#f0f0f0',
+  },
+  productDetails: {
+    flex: 1,
+    marginRight: 10, // Add margin to prevent overlapping with the checkbox
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  productQuantity: {
+    fontSize: 14,
+    color: '#666',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 8,
+  },
+  cancelButtonText: {
+    textAlign: 'center',
+    color: 'black',
+  },
+  confirmButton: {
+    backgroundColor: '#287238',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+  },
+  confirmButtonText: {
+    textAlign: 'center',
+    color: 'white',
   },
 });
 

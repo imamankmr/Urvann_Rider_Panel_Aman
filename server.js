@@ -70,6 +70,7 @@ app.get('/api/customers/:driverName', delivery.customers);
 app.put('/api/update-delivery-status/:customerName', delivery.updateDeliveryStatus);
 app.get('/deliveryscreen/product-details-v1', delivery.deliveryProductDetailsv1);
 app.get('/deliveryscreen/product-details', delivery.deliveryProductDetails);
+app.put('/api/update-partial-delivery', delivery.updatePartialDelivery);
 
 // Endpoints for RTO
 app.get('/api/rtoscreen/:driverName', rto.rtoData);

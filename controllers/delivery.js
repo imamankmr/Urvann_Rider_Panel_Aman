@@ -15,56 +15,65 @@ const customers = async (req, res) => {
 
         const routes = await Route.find({
             'Driver Name': driverName,
-            $or: filterConditions
+            $or: filterConditions,
         });
 
         if (routes.length === 0) {
             return res.status(404).json({ message: 'No customers found for this driver' });
         }
 
-        // Create a map to aggregate item quantities and statuses by order_code
+        // Create a map to aggregate item quantities and determine status by customer
         const customerMap = new Map();
 
-        routes.forEach(route => {
-            if (!customerMap.has(route.FINAL)) {
-                customerMap.set(route.FINAL, {
-                    _id: route._id, // Include _id
+        routes.forEach((route) => {
+            const customerKey = route.FINAL; // Unique identifier for customer (order code)
+
+            if (!customerMap.has(customerKey)) {
+                customerMap.set(customerKey, {
+                    _id: route._id,
                     name: route.shipping_address_full_name,
                     order_code: route.FINAL,
-                    //items: route.Items,
                     address: route.shipping_address_address,
-                    total_quantity: route.total_item_quantity, // Initialize with current quantity
+                    total_quantity: route.total_item_quantity,
                     phone: route.shipping_address_phone,
                     Alternate_number: route['Alternate phone number'],
-                    metafield_delivery_status: route.metafield_delivery_status || '' // Fetch the status
+                    statuses: [route.metafield_delivery_status || ''], // Collect statuses
                 });
             } else {
-                // Aggregate quantity for the existing order_code
-                const existing = customerMap.get(route.FINAL);
-                existing.total_quantity += route.total_item_quantity;
-                customerMap.set(route.FINAL, existing);
+                const existing = customerMap.get(customerKey);
+                existing.total_quantity += route.total_item_quantity; // Aggregate quantity
+                existing.statuses.push(route.metafield_delivery_status || ''); // Collect more statuses
+                customerMap.set(customerKey, existing);
             }
         });
 
-        // Convert map to array of objects
-        const customers = Array.from(customerMap.entries()).map(([order_code, { _id, order_code: code,name, address, total_quantity, phone, Alternate_number, metafield_delivery_status }]) => ({
-            _id,
-            order_code: code, // Use order_code as the key
-            name,
-            address,
-            total_quantity,
-            phone,
-            Alternate_number,
-            metafield_delivery_status, // Include status in response
-        }));
+        // Convert map to array and determine the final status
+        const customers = Array.from(customerMap.entries()).map(
+            ([order_code, { _id, name, address, total_quantity, phone, Alternate_number, statuses }]) => {
+                const finalStatus = statuses.includes('Partially Delivered')
+                    ? 'Partially Delivered'
+                    : statuses.find((status) => status) || ''; // Use the first non-empty status
 
+                return {
+                    _id,
+                    order_code,
+                    name,
+                    address,
+                    total_quantity,
+                    phone,
+                    Alternate_number,
+                    metafield_delivery_status: finalStatus, // Final determined status
+                };
+            }
+        );
 
-        res.json({ customers }); // Return the customers with aggregated quantity and status
+        res.json({ customers });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
+
 
 const deliveryProductDetailsv1 = async (req, res) => {
     try {
@@ -128,9 +137,6 @@ const deliveryProductDetailsv1 = async (req, res) => {
     }
 };
 
-
-
-
 const deliveryProductDetails = async (req, res) => {
     try {
         // Extract query parameters
@@ -188,6 +194,77 @@ const deliveryProductDetails = async (req, res) => {
     } catch (error) {
         console.error('Error fetching product details:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const updatePartialDelivery = async (req, res) => {
+    try {
+        const { order_code, deliveredProducts, driverName } = req.body;
+
+        console.log('Request payload:', { order_code, deliveredProducts, driverName });
+
+        // Validate required fields
+        if (!order_code || !deliveredProducts || !driverName) {
+            console.error('Validation Error: Missing required fields.');
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Ensure deliveredProducts is an array
+        if (!Array.isArray(deliveredProducts)) {
+            console.error('Validation Error: Delivered products must be an array.');
+            return res.status(400).json({ message: 'Delivered products must be an array.' });
+        }
+
+        // Debugging: Verify matching documents before the update
+        const matchingDocs = await Route.find({ FINAL: order_code, 'Driver Name': driverName });
+        console.log(`Matching documents for order_code: ${order_code}`, matchingDocs);
+
+        if (matchingDocs.length === 0) {
+            console.warn('No matching documents found for the given order_code and driverName.');
+            return res.status(404).json({ message: 'No matching records found to update.' });
+        }
+
+        // Check for locked statuses only for the specific driver
+        const lockedStatuses = await Route.find({ 
+            Lock_Status: "Open", 
+            "Driver Name": driverName // Add the driverName condition
+        });
+        
+        //console.log("Locked Statuses found:", lockedStatuses.length);
+
+        // If any locked statuses are found, send a 401 response
+        if (lockedStatuses.length > 0) {
+            //console.log("Returning 401: Locked statuses are open.");
+            return res.status(401).send('Please submit pickup before proceeding');
+        }
+
+        // Use bulkWrite to update `metafield_delivery_status`
+        const bulkWriteResult = await Route.bulkWrite([
+            {
+                updateMany: {
+                    filter: { FINAL: order_code, line_item_sku: { $in: deliveredProducts } },
+                    update: { $set: { metafield_delivery_status: 'Partially Delivered' } },
+                },
+            },
+            {
+                updateMany: {
+                    filter: { FINAL: order_code, line_item_sku: { $nin: deliveredProducts } },
+                    update: { $set: { metafield_delivery_status: 'Partially Not Delivered' } },
+                },
+            },
+        ]);
+
+        console.log('Bulk write result:', bulkWriteResult);
+
+        if (bulkWriteResult.modifiedCount === 0) {
+            console.warn('No records were updated for the given order_code and deliveredProducts.');
+            return res.status(404).json({ message: 'No records found to update.' });
+        }
+
+        res.status(200).json({ message: 'Partial delivery updated successfully' });
+    } catch (error) {
+        console.error('Error updating partial delivery:', error.message, error.stack);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
@@ -298,5 +375,6 @@ module.exports = {
     customers,
     updateDeliveryStatus,
     deliveryProductDetails,
+    updatePartialDelivery,
     deliveryProductDetailsv1,
 }
