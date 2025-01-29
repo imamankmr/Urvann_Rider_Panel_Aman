@@ -360,14 +360,15 @@ useEffect(() => {
       setPartialDeliveryModalVisible(false); // Close modal while fetching data
   
       fetchProductsForOrder(orderCode)
-        .then(() => {
-          setCurrentOrderCode(orderCode); // Set the current order code
-          setPartialDeliveryModalVisible(true); // Open modal after data is fetched
-        })
-        .catch((err) => {
-          console.error('Error fetching products:', err);
-          Alert.alert('Error', 'Failed to fetch product details.');
-        });
+      .then(() => {
+        setCurrentOrderCode(orderCode); // Ensure this doesn't trigger unnecessary re-renders
+        setPartialDeliveryModalVisible(true); // Set visible state only once
+      })
+      .catch((err) => {
+        console.error('Error fetching products:', err);
+        Alert.alert('Error', 'Failed to fetch product details.');
+      });
+
   
       return;
     }
@@ -611,54 +612,6 @@ useEffect(() => {
       setPartialDeliveryModalVisible(false);
     }
   };
-  
-  const confirmRTOPartialDelivery = async (selectedProducts) => {
-    if (!selectedProducts || selectedProducts.length === 0) {
-      Alert.alert('Error', 'No products selected for partial delivery.');
-      return;
-    }
-  
-    try {
-      // Log the payload being sent
-      console.log('Request payload:', {
-        order_code: currentOrderCode,
-        deliveredProducts: selectedProducts,
-        driverName,
-      });
-  
-      // API call
-      const response = await axios.put(`${BACKEND_URL}/api/update-partial-delivery`, {
-        order_code: currentOrderCode,
-        deliveredProducts: selectedProducts,
-        driverName,
-      });
-  
-      // Log the backend response
-      console.log('Backend response:', response.data);
-  
-      if (response.status === 200) {
-        Alert.alert('Success', 'Partial delivery updated successfully');
-        setRtoStatuses((prev) => ({
-          ...prev,
-          [currentOrderCode]: 'Partially Delivered',
-        }));
-        setRtoLockedStatuses((prev) => ({
-          ...prev,
-          [currentOrderCode]: true,
-        }));
-        setRefreshKey((prev) => prev + 1);
-      } else if (response.status === 401) {
-        Alert.alert('Error', 'Please submit pickup before proceeding');
-      } else {
-        Alert.alert('Error', 'Failed to update partial delivery.');
-      }
-    } catch (error) {
-      console.error('Error confirming partial delivery:', error);
-      Alert.alert('Error', 'Network or server error.');
-    } finally {
-      setPartialDeliveryModalVisible(false);
-    }
-  };
 
   const PartialDeliveryModal = ({ visible, products, selectedProducts, onConfirm, onCancel, disabled }) => {
     const [localSelectedProducts, setLocalSelectedProducts] = useState([]);
@@ -666,11 +619,12 @@ useEffect(() => {
   
     useEffect(() => {
       if (visible) {
-        setIsLoading(true); // Show loading indicator while resetting data
-        setLocalSelectedProducts([...selectedProducts]);
+        console.log('Fetched products:', products);
+        setLocalSelectedProducts([...selectedProducts]); // Initialize local state only once
+        setIsLoading(true); // Show loading indicator
         setTimeout(() => setIsLoading(false), 500); // Simulate loading time
       }
-    }, [visible, selectedProducts]);
+    }, [visible]);
   
     const toggleProductSelection = (productId) => {
       if (localSelectedProducts.includes(productId)) {
@@ -688,19 +642,18 @@ useEffect(() => {
   
             {isLoading ? (
               <ActivityIndicator size="large" color="#287238" />
-            ) : (
-              // Wrap FlatList in a View with fixed height
-              <View style={{ flex: 1, height: 300, marginBottom: 16 }}> {/* Fixed height for the product list */}
+            ) : products && products.length > 0 ? (
+              <View style={{ flex: 1, height: 300, marginBottom: 16 }}>
                 <FlatList
                   data={products}
-                  keyExtractor={(item) => item.line_item_sku}
+                  keyExtractor={(item, index) => item.line_item_sku || `item-${index}`}
                   showsVerticalScrollIndicator={false}
                   renderItem={({ item }) => {
                     const isSelected = localSelectedProducts.includes(item.line_item_sku);
                     return (
                       <TouchableOpacity
                         style={[modalStyles.productRow, isSelected && modalStyles.productRowSelected]}
-                        onPress={() => toggleProductSelection(item.line_item_sku)}
+                        onPress={() => toggleProductSelection(item.line_item_sku || '')}
                       >
                         <Image
                           source={{
@@ -710,15 +663,11 @@ useEffect(() => {
                           resizeMode="contain"
                         />
                         <View style={modalStyles.productDetails}>
-                          <Text
-                            style={modalStyles.productName}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {item.line_item_name}
+                          <Text style={modalStyles.productName} numberOfLines={1} ellipsizeMode="tail">
+                            {item.line_item_name || 'Unknown Product'}
                           </Text>
                           <Text style={modalStyles.productQuantity}>
-                            Quantity: {item.total_item_quantity}
+                            Quantity: {item.total_item_quantity || 'N/A'}
                           </Text>
                         </View>
                         <FontAwesome
@@ -731,9 +680,10 @@ useEffect(() => {
                   }}
                 />
               </View>
+            ) : (
+              <Text style={{ textAlign: 'center', marginTop: 20 }}>No products available</Text>
             )}
   
-            {/* Fixed Buttons at the Bottom */}
             <View style={modalStyles.buttonsContainer}>
               <TouchableOpacity onPress={onCancel} style={modalStyles.cancelButton}>
                 <Text style={modalStyles.cancelButtonText}>Cancel</Text>
@@ -749,7 +699,7 @@ useEffect(() => {
           </View>
         </View>
       </Modal>
-    );  
+    );
   };
   
   
@@ -769,16 +719,20 @@ useEffect(() => {
           // console.log(`Status for ${item.name}: ${deliveryStatuses[item._id]}, Color: ${statusColor}`);
 
           if (item.type === 'delivery') {
+            const MemoizedModal = React.memo(PartialDeliveryModal);
             return (
               // Modify the View component for the item container
               
               <View style={[deliveryStyles.itemContainer, { backgroundColor: statusColor }, vipVvipStyle]}>
                 <View style={deliveryStyles.infoContainer}>
-                  <Text style={[deliveryStyles.orderCode, orderCodeTextStyle]}>{item.order_code}
-                        {item.order_code.includes('VIP') || item.order_code.includes('VVIP') ? (
-                        <FontAwesome name="flag" size={20} color="red" style={{ marginLeft: 5, marginRight: 5 }} />
-                      ) : null}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[deliveryStyles.orderCode, orderCodeTextStyle]}>
+                      {item.order_code}
+                    </Text>
+                    {(item.order_code.includes('VIP') || item.order_code.includes('VVIP')) && (
+                      <FontAwesome name="flag" size={20} color="red" style={{ marginLeft: 5, marginRight: 5 }} />
+                    )}
+                  </View>
                   <Text style={deliveryStyles.customerName}>{item.name}</Text>
                   <Text style={deliveryStyles.address}>{item.address}</Text>
                   <View style={deliveryStyles.pickerContainer}>
@@ -807,7 +761,7 @@ useEffect(() => {
                     <FontAwesome name="phone" size={35} color="#287238" />
                   </TouchableOpacity>
                 </View>
-                <PartialDeliveryModal
+                <MemoizedModal
                   visible={partialDeliveryModalVisible}
                   products={selectedOrderProducts}
                   selectedProducts={selectedProducts}
@@ -816,7 +770,6 @@ useEffect(() => {
                     confirmPartialDelivery(selectedProducts);
                   }}
                   onCancel={() => setPartialDeliveryModalVisible(false)}
-                  //disabled={deliveryLockedStatuses[selectedOrderProducts[0]._id]}
                 />
                 <View style={{ position: "absolute", right: 15, top: 15 }}>
                   <Text style={{
