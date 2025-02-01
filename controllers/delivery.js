@@ -9,8 +9,9 @@ const customers = async (req, res) => {
 
         // Define the filter conditions for Delivery_Status
         const filterConditions = [
-            { 'metafield_order_type': { $exists: false } }, // No Delivery_Status field
-            { 'metafield_order_type': '' }, // Also include empty string for metafield_order_type
+            { 'metafield_order_type': { $exists: false } }, 
+            { 'metafield_order_type': '' }, 
+            { 'metafield_order_type': null },
         ];
 
         const routes = await Route.find({
