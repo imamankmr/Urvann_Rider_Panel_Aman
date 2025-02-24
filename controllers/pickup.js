@@ -219,7 +219,10 @@ const NotDeliveredSellers = async (req, res) => {
                                     'Delivery_Status': 'Not Delivered'
                                 },
                                 {
-                                    metafield_order_type: { $exists: false }, // Handles cases where metafield_order_type is missing
+                                    $or: [
+                                        { metafield_order_type: { $exists: false } },  
+                                        { metafield_order_type: null }               
+                                    ],
                                     metafield_delivery_status: { $in: [
                                         'Z-Replacement Successful', 
                                         'Z-Reverse Successful', 
@@ -272,7 +275,10 @@ const NotDeliveredSellers = async (req, res) => {
                                                 'Delivery_Status': 'Not Delivered'
                                             },
                                             {
-                                                metafield_order_type: { $exists: false }, // Handles cases where metafield_order_type is missing
+                                                $or: [
+                                                    { metafield_order_type: { $exists: false } },  
+                                                    { metafield_order_type: null }               
+                                                ],
                                                 metafield_delivery_status: { $in: [
                                                     'Z-Replacement Successful', 
                                                     'Z-Reverse Successful', 
@@ -346,7 +352,10 @@ const deliveredSellers = async (req, res) => {
                                     'Delivery_Status': 'Delivered'
                                 },
                                 {
-                                    metafield_order_type: { $exists: false }, // Handles cases where metafield_order_type is missing
+                                    $or: [
+                                        { metafield_order_type: { $exists: false } },  
+                                        { metafield_order_type: null }            
+                                    ],
                                     metafield_delivery_status: { $in: [
                                         'Z-Replacement Successful', 
                                         'Z-Reverse Successful', 
@@ -399,7 +408,10 @@ const deliveredSellers = async (req, res) => {
                                                 'Delivery_Status': 'Delivered'
                                             },
                                             {
-                                                metafield_order_type: { $exists: false }, // Handles cases where metafield_order_type is missing
+                                                $or: [
+                                                    { metafield_order_type: { $exists: false } },  
+                                                    { metafield_order_type: null }                 
+                                                ],
                                                 metafield_delivery_status: { $in: [
                                                     'Z-Replacement Successful', 
                                                     'Z-Reverse Successful', 
