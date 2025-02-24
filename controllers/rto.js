@@ -10,7 +10,10 @@ const rtoData = async (req, res) => {
         const filterConditions = [
             { 'metafield_order_type': 'Replacement' },
             { 'metafield_order_type': 'Reverse Pickup' },
-            //{ 'metafield_order_type': 'Delivery Failed' },
+            { 'metafield_order_type': 'A-Delivery Failed (CNR)' },
+            { 'metafield_order_type': 'A-Delivery failed (Rescheduled)' },
+            { 'metafield_order_type': 'Z-Delivery Failed (customer cancelled)' },
+            { 'metafield_order_type': 'A-Delivery Failed (rider side)' },
         ];
 
         // Fetch routes with the given driver name and filter conditions
