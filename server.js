@@ -57,13 +57,9 @@ app.get('/api/data/:driverName', dailyUpdates.getUpdates);
 
 // Endpoint for Summary
 app.get('/api/summary/:driverName', payout.summary);
-
-// Endpoint for Refund
 app.get('/api/refund/:driverName', payout.refund);
-
-// Endpoint for Payable
 app.get('/api/payable/:driverName', payout.payable);
-
+app.get('/api/payout/:driverName', payout.getPayoutData);
 
 // Endpoints for Delivery
 app.get('/api/customers/:driverName', delivery.customers);
