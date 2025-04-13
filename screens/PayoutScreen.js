@@ -33,6 +33,15 @@ const PayoutScreen = ({ route }) => {
       let url = `${BACKEND_URL}/api/payout/${driverName}`;
       const params = new URLSearchParams();
       
+      // If no dates provided, use today's date
+      if (!startDate && !endDate) {
+        const today = new Date();
+        startDate = new Date(today);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+      }
+      
       if (startDate) {
         params.append('startDate', startDate.toISOString());
       }
@@ -44,10 +53,42 @@ const PayoutScreen = ({ route }) => {
         url += `?${params.toString()}`;
       }
 
-      const response = await axios.get(url);
+      console.log('Fetching payout data from:', url);
+      
+      const response = await axios.get(url, {
+        timeout: 10000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('Payout response:', response.data);
       setPayoutData(response.data);
     } catch (error) {
-      console.error('Error fetching payout data:', error);
+      console.error('Detailed error in fetchPayoutData:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method,
+      });
+      
+      // Set default data in case of error
+      setPayoutData({
+        driverDetails: {
+          driverAssigned: driverName,
+          driverCode: 'N/A',
+          hub: 'N/A'
+        },
+        totalEarnings: 0,
+        ordersCompleted: 0,
+        delivered: 0,
+        notDelivered: 0,
+        incentives: 0,
+        penalties: 0,
+        netEarnings: 0
+      });
     }
   };
 
