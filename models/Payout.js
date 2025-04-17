@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { mainDB } = require('../middlewares/connectToDB');
 
 const payoutSchema = new mongoose.Schema({
   'Date': {
@@ -42,12 +43,23 @@ const payoutSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  'txn_id': {
+    type: String
+  },
+  'rider_code': {
+    type: String
+  },
   'Remarks': {
     type: String
   }
 }, {
   timestamps: true
 });
+
+// Create indexes for better query performance
+payoutSchema.index({ 'Driver Assigned': 1 });
+payoutSchema.index({ 'Date': 1 });
+payoutSchema.index({ 'txn_id': 1 });
 
 const Payout = mongoose.model('Payout', payoutSchema, 'Payout');
 

@@ -23,7 +23,6 @@ app.post('/api/register', user.registerUser);
 // Login route
 app.post('/api/login', user.loginUser);
 
-
 // GET /api/driver/:driverName/sellers
 // app.get('/api/driver/:driverName/sellers', pickup.sellers);
 app.get('/api/driver/:driverName/pickup-sellers', pickup.pickupSellers);
@@ -51,7 +50,6 @@ app.post('/api/update-pickup-status-bulk', pickup.updatePickupStatusBulk);
 app.post('/api/update-returns-delivery-status', pickup.updateReturnsDeliveryStatus);
 app.post('/api/update-returns-delivery-status-bulk', pickup.updateReturnsDeliveryStatusBulk);
 
-
 // GET /api/data/:driverName
 app.get('/api/data/:driverName', dailyUpdates.getUpdates);
 
@@ -60,6 +58,7 @@ app.get('/api/summary/:driverName', payout.summary);
 app.get('/api/refund/:driverName', payout.refund);
 app.get('/api/payable/:driverName', payout.payable);
 app.get('/api/payout/:driverName', payout.getPayoutData);
+app.get('/api/payout/date-wise/:driverName', payout.getDateWiseEarnings);
 
 // Endpoints for Delivery
 app.get('/api/customers/:driverName', delivery.customers);
@@ -78,7 +77,8 @@ app.get('/rtoscreen/product-details-v1', rto.rtoProductDetailsv1);
 
 app.put('/api/update-rto-status/:customerName/:orderType', rto.updateRTOStatus);
 
-// Server listening on port 5001
-app.listen(5001, () => {
-  console.log('Server is running on http://localhost:5001');
+const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

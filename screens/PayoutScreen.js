@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { BACKEND_URL } from 'react-native-dotenv';
 import axios from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -13,6 +13,7 @@ const PayoutScreen = ({ route }) => {
   const [toDate, setToDate] = useState(new Date());
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(true);
   const [hasSelectedStartDate, setHasSelectedStartDate] = useState(false);
+  const [yesterdayDate, setYesterdayDate] = useState('');
   const [payoutData, setPayoutData] = useState({
     driverDetails: {
       driverAssigned: '',
@@ -25,35 +26,53 @@ const PayoutScreen = ({ route }) => {
     notDelivered: 0,
     incentives: 0,
     penalties: 0,
-    netEarnings: 0
+    netEarnings: 0,
+    orderDetails: []
   });
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [modalView, setModalView] = useState('daily'); // 'daily', 'orders', 'delivered', 'notDelivered'
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [weekDates, setWeekDates] = useState([]);
+  const [dateWiseEarnings, setDateWiseEarnings] = useState([]);
 
   const fetchPayoutData = async (startDate = null, endDate = null) => {
     try {
       let url = `${BACKEND_URL}/api/payout/${driverName}`;
       const params = new URLSearchParams();
       
-      // If no dates provided, use today's date
+      // If no dates provided, use yesterday's date
       if (!startDate && !endDate) {
-        const today = new Date();
-        startDate = new Date(today);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(today);
-        endDate.setHours(23, 59, 59, 999);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        
+        const endOfYesterday = new Date(yesterday);
+        endOfYesterday.setHours(23, 59, 59, 999);
+        
+        startDate = yesterday;
+        endDate = endOfYesterday;
       }
       
-      if (startDate) {
-        params.append('startDate', startDate.toISOString());
-      }
-      if (endDate) {
-        params.append('endDate', endDate.toISOString());
-      }
+      // Ensure dates are properly formatted
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      params.append('startDate', start.toISOString());
+      params.append('endDate', end.toISOString());
       
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
 
       console.log('Fetching payout data from:', url);
+      console.log('Date range:', {
+        start: start.toISOString(),
+        end: end.toISOString()
+      });
       
       const response = await axios.get(url, {
         timeout: 10000,
@@ -87,8 +106,48 @@ const PayoutScreen = ({ route }) => {
         notDelivered: 0,
         incentives: 0,
         penalties: 0,
-        netEarnings: 0
+        netEarnings: 0,
+        orderDetails: []
       });
+    }
+  };
+
+  const fetchDateWiseEarnings = async (startDate, endDate) => {
+    try {
+      let url = `${BACKEND_URL}/api/payout/date-wise/${driverName}`;
+      const params = new URLSearchParams();
+      
+      // Ensure dates are properly formatted
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      params.append('startDate', start.toISOString());
+      params.append('endDate', end.toISOString());
+      
+      url += `?${params.toString()}`;
+
+      console.log('Fetching date-wise earnings from:', url);
+      console.log('Date range:', {
+        start: start.toISOString(),
+        end: end.toISOString()
+      });
+      
+      const response = await axios.get(url, {
+        timeout: 10000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('Date-wise earnings response:', response.data);
+      setDateWiseEarnings(response.data.dateWiseEarnings);
+    } catch (error) {
+      console.error('Error fetching date-wise earnings:', error);
+      setDateWiseEarnings([]);
     }
   };
 
@@ -102,27 +161,32 @@ const PayoutScreen = ({ route }) => {
       const today = new Date();
       switch (tab) {
         case 'Today': {
-          const startOfToday = new Date(today);
-          startOfToday.setHours(0, 0, 0, 0);
-          fetchPayoutData(startOfToday);
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          yesterday.setHours(0, 0, 0, 0);
+          
+          const endOfYesterday = new Date(yesterday);
+          endOfYesterday.setHours(23, 59, 59, 999);
+          
+          fetchPayoutData(yesterday, endOfYesterday);
           break;
         }
         case 'This Week': {
-          // Get start of week (Sunday) and end of week (Saturday)
           const startOfWeek = new Date(today);
           startOfWeek.setDate(today.getDate() - today.getDay()); // Set to Sunday
           startOfWeek.setHours(0, 0, 0, 0);
 
-          const endOfWeek = new Date(today);
-          endOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Set to Saturday
-          endOfWeek.setHours(23, 59, 59, 999);
+          const endOfToday = new Date(today);
+          endOfToday.setHours(23, 59, 59, 999);
 
-          console.log('Week range:', {
+          // Log the date range being used
+          console.log('This Week date range:', {
             start: startOfWeek.toISOString(),
-            end: endOfWeek.toISOString()
+            end: endOfToday.toISOString()
           });
 
-          fetchPayoutData(startOfWeek, endOfWeek);
+          fetchPayoutData(startOfWeek, endOfToday);
+          fetchDateWiseEarnings(startOfWeek, endOfToday);
           break;
         }
       }
@@ -132,8 +196,15 @@ const PayoutScreen = ({ route }) => {
   const onFromDateChange = (event, selectedDate) => {
     setShowFromDatePicker(false);
     if (selectedDate) {
-      setFromDate(selectedDate);
+      // Set the start of the day for fromDate
+      const startOfDay = new Date(selectedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      setFromDate(startOfDay);
       setHasSelectedStartDate(true);
+      
+      // Log the selected start date
+      console.log('Selected start date:', startOfDay.toISOString());
+      
       // Short delay before showing the end date picker
       setTimeout(() => {
         setIsSelectingStartDate(false);
@@ -145,14 +216,126 @@ const PayoutScreen = ({ route }) => {
   const onToDateChange = (event, selectedDate) => {
     setShowToDatePicker(false);
     if (selectedDate) {
-      setToDate(selectedDate);
-      fetchPayoutData(fromDate, selectedDate);
+      // Set the end of the day for toDate
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      setToDate(endOfDay);
+      
+      // Log the dates being sent to the API
+      console.log('Sending date range to API:', {
+        from: fromDate.toISOString(),
+        to: endOfDay.toISOString()
+      });
+      
+      // Fetch both overall payout data and date-wise earnings
+      fetchPayoutData(fromDate, endOfDay);
+      fetchDateWiseEarnings(fromDate, endOfDay);
     }
   };
 
   useEffect(() => {
-    fetchPayoutData();
+    // Set default tab to Today and fetch yesterday's data
+    setSelectedTab('Today');
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    
+    const endOfYesterday = new Date(yesterday);
+    endOfYesterday.setHours(23, 59, 59, 999);
+    
+    fetchPayoutData(yesterday, endOfYesterday);
   }, [driverName]);
+
+  // Calculate yesterday's date when component mounts
+  useEffect(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const formattedDate = yesterday.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long'
+    });
+    setYesterdayDate(formattedDate);
+  }, []);
+
+  const getDailyEarnings = () => {
+    if (!payoutData.orderDetails || payoutData.orderDetails.length === 0) return [];
+    
+    // Group orders by date
+    const ordersByDate = payoutData.orderDetails.reduce((acc, order) => {
+      const date = new Date(order.date).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      
+      if (!acc[date]) {
+        acc[date] = {
+          date,
+          baseEarning: 0,
+          incentives: 0,
+          penalties: 0,
+          orders: []
+        };
+      }
+      
+      acc[date].baseEarning += order.baseEarning;
+      acc[date].incentives += order.incentives;
+      acc[date].penalties += order.penalties;
+      acc[date].orders.push(order);
+      
+      return acc;
+    }, {});
+
+    // Get dates from start of week to today
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Set to Sunday
+    
+    const dates = [];
+    let currentDate = new Date(startOfWeek);
+    
+    while (currentDate <= today) {
+      const formattedDate = currentDate.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      
+      dates.push({
+        date: formattedDate,
+        baseEarning: ordersByDate[formattedDate]?.baseEarning || 0,
+        incentives: ordersByDate[formattedDate]?.incentives || 0,
+        penalties: ordersByDate[formattedDate]?.penalties || 0,
+        orders: ordersByDate[formattedDate]?.orders || []
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates.reverse(); // Show most recent dates first
+  };
+
+  const handleEarningsCardPress = () => {
+    setModalView('daily');
+    setSelectedDate(null);
+    setShowOrderDetailsModal(true);
+  };
+
+  const handleDatePress = (date) => {
+    setSelectedDate(date);
+    setModalView('orders');
+  };
+
+  const handleBackPress = () => {
+    setModalView('daily');
+    setSelectedDate(null);
+  };
+
+  const handleStatusPress = (status) => {
+    setSelectedStatus(status);
+    setModalView(status === 'Z-Delivered' ? 'delivered' : 'notDelivered');
+    setShowOrderDetailsModal(true);
+  };
 
   return (
     <View style={styles.container}>
@@ -172,7 +355,7 @@ const PayoutScreen = ({ route }) => {
           <View style={styles.totalEarningsContainer}>
             <Text style={styles.totalEarningsLabel}>Total Earnings</Text>
             <View style={styles.totalEarningsCard}>
-              <Text style={styles.totalEarningsAmount}>₹{payoutData.netEarnings}</Text>
+              <Text style={styles.totalEarningsAmount}>₹{payoutData.lifetimeEarnings}</Text>
             </View>
           </View>
         </View>
@@ -184,7 +367,9 @@ const PayoutScreen = ({ route }) => {
           style={[styles.tab, selectedTab === 'Today' && styles.activeTab]}
           onPress={() => handleTabPress('Today')}
         >
-          <Text numberOfLines={1} style={[styles.tabText, selectedTab === 'Today' && styles.activeTabText]}>Today</Text>
+          <Text numberOfLines={1} style={[styles.tabText, selectedTab === 'Today' && styles.activeTabText]}>
+            {yesterdayDate}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, selectedTab === 'This Week' && styles.activeTab]}
@@ -270,10 +455,26 @@ const PayoutScreen = ({ route }) => {
 
       {/* Earnings and Orders Section */}
       <View style={styles.statsContainer}>
-        <View style={styles.earningsCard}>
-          <Text style={styles.cardTitle}>Today's Earnings</Text>
-          <Text style={styles.earningsAmount}>₹{payoutData.totalEarnings}</Text>
-        </View>
+        <TouchableOpacity 
+          style={styles.earningsCard}
+          onPress={handleEarningsCardPress}
+        >
+          <Text style={styles.cardTitle}>
+            {selectedTab === 'Today' 
+              ? `${yesterdayDate}'s Earnings`
+              : selectedTab === 'This Week'
+                ? 'This Week\'s Earnings'
+                : `${fromDate.toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short'
+                  })} - ${toDate.toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short'
+                  })} Earnings`
+            }
+          </Text>
+          <Text style={styles.earningsAmount}>₹{payoutData.netEarnings}</Text>
+        </TouchableOpacity>
         <View style={styles.ordersCard}>
           <Text style={styles.cardTitle}>Orders Assigned</Text>
           <Text style={styles.ordersCount}>{payoutData.ordersCompleted}</Text>
@@ -287,14 +488,20 @@ const PayoutScreen = ({ route }) => {
         </View>
 
         <View style={styles.statusGrid}>
-          <View style={[styles.statusCard, styles.deliveredCard]}>
+          <TouchableOpacity 
+            style={[styles.statusCard, styles.deliveredCard]}
+            onPress={() => handleStatusPress('Z-Delivered')}
+          >
             <Text numberOfLines={1} style={styles.statusLabel}>Delivered</Text>
             <Text style={styles.statusNumber}>{payoutData.delivered}</Text>
-          </View>
-          <View style={[styles.statusCard, styles.notDeliveredCard]}>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.statusCard, styles.notDeliveredCard]}
+            onPress={() => handleStatusPress('Not Delivered')}
+          >
             <Text numberOfLines={1} style={styles.statusLabel}>Not Delivered</Text>
             <Text style={styles.statusNumber}>{payoutData.notDelivered}</Text>
-          </View>
+          </TouchableOpacity>
           <View style={[styles.statusCard, styles.incentivesCard]}>
             <Text numberOfLines={1} style={styles.statusLabel}>Incentive</Text>
             <Text style={styles.statusNumber}>₹{payoutData.incentives}</Text>
@@ -305,6 +512,177 @@ const PayoutScreen = ({ route }) => {
           </View>
         </View>
       </View>
+
+      {/* Order Details Modal */}
+      <Modal
+        visible={showOrderDetailsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowOrderDetailsModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              {modalView !== 'daily' && (
+                <TouchableOpacity 
+                  style={styles.backButton}
+                  onPress={() => {
+                    setModalView('daily');
+                    setSelectedStatus(null);
+                  }}
+                >
+                  <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
+              )}
+              <Text style={styles.modalTitle}>
+                {modalView === 'daily' 
+                  ? (selectedTab === 'Today' ? 'Order Details' : 'Daily Earnings') 
+                  : modalView === 'delivered'
+                    ? 'Delivered Orders'
+                    : modalView === 'notDelivered'
+                      ? 'Not Delivered Orders'
+                      : `Orders for ${selectedDate}`}
+              </Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => {
+                  setShowOrderDetailsModal(false);
+                  setSelectedStatus(null);
+                }}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {modalView === 'daily' ? (
+              <ScrollView 
+                style={styles.tableContainer}
+                horizontal={true}
+                showsHorizontalScrollIndicator={true}
+              >
+                <View>
+                  {/* Daily Earnings Table Header */}
+                  <View style={styles.tableRow}>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Txn ID</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Rider Code</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Status</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Earning</Text>
+                    </View>
+                  </View>
+
+                  {/* Daily Earnings Table Body */}
+                  {selectedTab === 'Today' ? (
+                    payoutData.orderDetails.map((order, index) => (
+                      <View key={index} style={styles.tableRow}>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{order.txnId}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{order.riderCode}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={[
+                            styles.cellText,
+                            order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
+                          ]}>
+                            {order.deliveryStatus}
+                          </Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            ₹{order.baseEarning + order.incentives - order.penalties}
+                          </Text>
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    dateWiseEarnings.map((day, index) => (
+                      <TouchableOpacity 
+                        key={index} 
+                        style={styles.tableRow}
+                        onPress={() => handleDatePress(day.date)}
+                      >
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{day.date}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            ₹{day.baseEarning + day.incentives - day.penalties}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              </ScrollView>
+            ) : (
+              <ScrollView 
+                style={styles.tableContainer}
+                horizontal={true}
+                showsHorizontalScrollIndicator={true}
+              >
+                <View>
+                  {/* Order Details Table Header */}
+                  <View style={styles.tableRow}>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Txn ID</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Rider Code</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Status</Text>
+                    </View>
+                    <View style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>Earning</Text>
+                    </View>
+                  </View>
+
+                  {/* Order Details Table Body */}
+                  {payoutData.orderDetails
+                    .filter(order => 
+                      modalView === 'delivered' 
+                        ? order.deliveryStatus === 'Z-Delivered'
+                        : modalView === 'notDelivered'
+                          ? order.deliveryStatus !== 'Z-Delivered'
+                          : true
+                    )
+                    .map((order, index) => (
+                      <View key={index} style={styles.tableRow}>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{order.txnId}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{order.riderCode}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={[
+                            styles.cellText,
+                            order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
+                          ]}>
+                            {order.deliveryStatus}
+                          </Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            ₹{order.baseEarning + order.incentives - order.penalties}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -573,6 +951,78 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    paddingBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: '#666',
+  },
+  tableContainer: {
+    marginTop: 8,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tableCell: {
+    padding: 12,
+    minWidth: 120,
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
+  },
+  headerCell: {
+    backgroundColor: '#f5f5f5',
+  },
+  headerText: {
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cellText: {
+    color: '#333',
+  },
+  deliveredText: {
+    color: '#4CAF50',
+  },
+  notDeliveredText: {
+    color: '#FF5722',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#666',
   },
 });
 
