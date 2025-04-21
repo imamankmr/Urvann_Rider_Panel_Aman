@@ -82,7 +82,7 @@ const PayoutScreen = ({ route }) => {
         }
       });
       
-      console.log('Payout response:', response.data);
+      //console.log('Payout response:', response.data);
       setPayoutData(response.data);
     } catch (error) {
       console.error('Detailed error in fetchPayoutData:', {
@@ -143,7 +143,7 @@ const PayoutScreen = ({ route }) => {
         }
       });
       
-      console.log('Date-wise earnings response:', response.data);
+      //console.log('Date-wise earnings response:', response.data);
       setDateWiseEarnings(response.data.dateWiseEarnings);
     } catch (error) {
       console.error('Error fetching date-wise earnings:', error);
@@ -324,6 +324,7 @@ const PayoutScreen = ({ route }) => {
   const handleDatePress = (date) => {
     setSelectedDate(date);
     setModalView('orders');
+    setShowOrderDetailsModal(true);
   };
 
   const handleBackPress = () => {
@@ -334,6 +335,18 @@ const PayoutScreen = ({ route }) => {
   const handleStatusPress = (status) => {
     setSelectedStatus(status);
     setModalView(status === 'Z-Delivered' ? 'delivered' : 'notDelivered');
+    setShowOrderDetailsModal(true);
+  };
+
+  const handleIncentivesPress = () => {
+    setSelectedStatus('incentives');
+    setModalView('incentives');
+    setShowOrderDetailsModal(true);
+  };
+
+  const handlePenaltiesPress = () => {
+    setSelectedStatus('penalties');
+    setModalView('penalties');
     setShowOrderDetailsModal(true);
   };
 
@@ -502,14 +515,20 @@ const PayoutScreen = ({ route }) => {
             <Text numberOfLines={1} style={styles.statusLabel}>Not Delivered</Text>
             <Text style={styles.statusNumber}>{payoutData.notDelivered}</Text>
           </TouchableOpacity>
-          <View style={[styles.statusCard, styles.incentivesCard]}>
+          <TouchableOpacity 
+            style={[styles.statusCard, styles.incentivesCard]}
+            onPress={handleIncentivesPress}
+          >
             <Text numberOfLines={1} style={styles.statusLabel}>Incentive</Text>
             <Text style={styles.statusNumber}>₹{payoutData.incentives}</Text>
-          </View>
-          <View style={[styles.statusCard, styles.penaltiesCard]}>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.statusCard, styles.penaltiesCard]}
+            onPress={handlePenaltiesPress}
+          >
             <Text numberOfLines={1} style={styles.statusLabel}>Penalties</Text>
             <Text style={styles.statusNumber}>₹{payoutData.penalties}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -541,7 +560,11 @@ const PayoutScreen = ({ route }) => {
                     ? 'Delivered Orders'
                     : modalView === 'notDelivered'
                       ? 'Not Delivered Orders'
-                      : `Orders for ${selectedDate}`}
+                      : modalView === 'incentives'
+                        ? 'Incentive Orders'
+                        : modalView === 'penalties'
+                            ? 'Penalty Orders'
+                            : `Orders for ${selectedDate}`}
               </Text>
               <TouchableOpacity 
                 style={styles.closeButton}
@@ -554,132 +577,217 @@ const PayoutScreen = ({ route }) => {
               </TouchableOpacity>
             </View>
             
-            {modalView === 'daily' ? (
-              <ScrollView 
-                style={styles.tableContainer}
-                horizontal={true}
-                showsHorizontalScrollIndicator={true}
-              >
-                <View>
-                  {/* Daily Earnings Table Header */}
-                  <View style={styles.tableRow}>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Txn ID</Text>
+            <ScrollView style={styles.modalScrollView}>
+              {modalView === 'daily' ? (
+                <ScrollView 
+                  style={styles.tableContainer}
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={true}
+                >
+                  <View>
+                    {/* Daily Earnings Table Header */}
+                    <View style={styles.tableRow}>
+                      {selectedTab === 'Today' ? (
+                        <>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Txn ID</Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Status</Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Payment Count</Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Remarks</Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Earning</Text>
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Date</Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.headerCell]}>
+                            <Text style={styles.headerText}>Earning</Text>
+                          </View>
+                        </>
+                      )}
                     </View>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Rider Code</Text>
-                    </View>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Status</Text>
-                    </View>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Earning</Text>
-                    </View>
-                  </View>
 
-                  {/* Daily Earnings Table Body */}
-                  {selectedTab === 'Today' ? (
-                    payoutData.orderDetails.map((order, index) => (
-                      <View key={index} style={styles.tableRow}>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>{order.txnId}</Text>
+                    {/* Daily Earnings Table Body */}
+                    {selectedTab === 'Today' ? (
+                      payoutData.orderDetails.map((order, index) => (
+                        <View key={index} style={styles.tableRow}>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{order.txnId}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={[
+                              styles.cellText,
+                              order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
+                            ]}>
+                              {order.deliveryStatus}
+                            </Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{order.paymentCount || 0}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{order.remarks || '-'}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>
+                              ₹{order.baseEarning + order.incentives - order.penalties}
+                            </Text>
+                          </View>
                         </View>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>{order.riderCode}</Text>
-                        </View>
-                        <View style={styles.tableCell}>
-                          <Text style={[
-                            styles.cellText,
-                            order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
-                          ]}>
-                            {order.deliveryStatus}
-                          </Text>
-                        </View>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>
-                            ₹{order.baseEarning + order.incentives - order.penalties}
-                          </Text>
-                        </View>
-                      </View>
-                    ))
-                  ) : (
-                    dateWiseEarnings.map((day, index) => (
-                      <TouchableOpacity 
-                        key={index} 
-                        style={styles.tableRow}
-                        onPress={() => handleDatePress(day.date)}
-                      >
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>{day.date}</Text>
-                        </View>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>
-                            ₹{day.baseEarning + day.incentives - day.penalties}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </View>
-              </ScrollView>
-            ) : (
-              <ScrollView 
-                style={styles.tableContainer}
-                horizontal={true}
-                showsHorizontalScrollIndicator={true}
-              >
-                <View>
-                  {/* Order Details Table Header */}
-                  <View style={styles.tableRow}>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Txn ID</Text>
-                    </View>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Rider Code</Text>
-                    </View>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Status</Text>
-                    </View>
-                    <View style={[styles.tableCell, styles.headerCell]}>
-                      <Text style={styles.headerText}>Earning</Text>
-                    </View>
+                      ))
+                    ) : (
+                      dateWiseEarnings.map((day, index) => (
+                        <TouchableOpacity 
+                          key={index} 
+                          style={styles.tableRow}
+                          onPress={() => handleDatePress(day.date)}
+                        >
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{day.date}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>
+                              ₹{day.baseEarning + day.incentives - day.penalties}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                    )}
                   </View>
-
-                  {/* Order Details Table Body */}
-                  {payoutData.orderDetails
-                    .filter(order => 
-                      modalView === 'delivered' 
-                        ? order.deliveryStatus === 'Z-Delivered'
-                        : modalView === 'notDelivered'
-                          ? order.deliveryStatus !== 'Z-Delivered'
-                          : true
-                    )
-                    .map((order, index) => (
-                      <View key={index} style={styles.tableRow}>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>{order.txnId}</Text>
-                        </View>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>{order.riderCode}</Text>
-                        </View>
-                        <View style={styles.tableCell}>
-                          <Text style={[
-                            styles.cellText,
-                            order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
-                          ]}>
-                            {order.deliveryStatus}
-                          </Text>
-                        </View>
-                        <View style={styles.tableCell}>
-                          <Text style={styles.cellText}>
-                            ₹{order.baseEarning + order.incentives - order.penalties}
-                          </Text>
-                        </View>
+                </ScrollView>
+              ) : (
+                <ScrollView 
+                  style={styles.tableContainer}
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={true}
+                >
+                  <View>
+                    {/* Order Details Table Header */}
+                    <View style={[styles.tableRow, styles.headerRow]}>
+                      <View style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>Txn ID</Text>
                       </View>
-                    ))}
-                </View>
-              </ScrollView>
-            )}
+                      <View style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>Status</Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>Payment Count</Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>Remarks</Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>
+                          {modalView === 'incentives' 
+                            ? 'Incentive' 
+                            : modalView === 'penalties' 
+                              ? 'Penalty' 
+                              : 'Earning'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Order Details Table Body */}
+                    {modalView === 'orders' && selectedDate ? (
+                      // Show orders for the selected date from dateWiseEarnings
+                      dateWiseEarnings
+                          .find(day => day.date === selectedDate)?.orders
+                          .map((order, index) => (
+                              <View key={index} style={styles.tableRow}>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>{order.txnId}</Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={[
+                                          styles.cellText,
+                                          order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
+                                      ]}>
+                                          {order.deliveryStatus}
+                                      </Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>{order.paymentCount || 0}</Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>{order.remarks || '-'}</Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>
+                                          ₹{order.baseEarning + order.incentives - order.penalties}
+                                      </Text>
+                                  </View>
+                              </View>
+                          ))
+                    ) : (
+                      // Show filtered orders from payoutData for other views
+                      payoutData.orderDetails
+                          .filter(order => {
+                              if (modalView === 'delivered') {
+                                  return order.deliveryStatus === 'Z-Delivered';
+                              }
+                              if (modalView === 'notDelivered') {
+                                  return order.deliveryStatus !== 'Z-Delivered';
+                              }
+                              if (modalView === 'incentives') {
+                                  return (order.incentives || 0) > 0;
+                              }
+                              if (modalView === 'penalties') {
+                                  return (order.penalties || 0) > 0;
+                              }
+                              return true;
+                          })
+                          .map((order, index) => (
+                              <View key={index} style={styles.tableRow}>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>{order.txnId}</Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={[
+                                          styles.cellText,
+                                          order.deliveryStatus === 'Z-Delivered' ? styles.deliveredText : styles.notDeliveredText
+                                      ]}>
+                                          {order.deliveryStatus}
+                                      </Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>{order.paymentCount || 0}</Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={styles.cellText}>{order.remarks || '-'}</Text>
+                                  </View>
+                                  <View style={styles.tableCell}>
+                                      <Text style={[
+                                          styles.cellText,
+                                          modalView === 'incentives' ? styles.incentiveText : 
+                                          modalView === 'penalties' ? styles.penaltyText : 
+                                          styles.earningText
+                                      ]}>
+                                          {modalView === 'incentives' ? (
+                                              `₹${order.incentives}`
+                                          ) : modalView === 'penalties' ? (
+                                              `₹${order.penalties}`
+                                          ) : (
+                                              `₹${order.baseEarning + order.incentives - order.penalties}`
+                                          )}
+                                      </Text>
+                                  </View>
+                              </View>
+                          ))
+                    )}
+                  </View>
+                </ScrollView>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -960,69 +1068,137 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 0,
     width: '90%',
     maxHeight: '80%',
+    flex: 1,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    paddingBottom: 8,
+    borderBottomColor: '#E0E0E0',
+    backgroundColor: '#F8F9FA',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2C3E50',
+    flex: 1,
+    textAlign: 'center',
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#E9ECEF',
+  },
+  backButtonText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    color: '#6C757D',
   },
   closeButton: {
     padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#E9ECEF',
   },
   closeButtonText: {
-    fontSize: 24,
-    color: '#666',
+    fontSize: 20,
+    color: '#6C757D',
+  },
+  modalScrollView: {
+    flex: 1,
+    width: '100%',
   },
   tableContainer: {
-    marginTop: 8,
+    padding: 16,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    margin: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    marginBottom: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  headerRow: {
+    backgroundColor: '#F8F9FA',
+    marginBottom: 12,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderWidth: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: '#E0E0E0',
   },
   tableCell: {
     padding: 12,
     minWidth: 120,
+    maxWidth: 150,
+    justifyContent: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
+    borderRightColor: '#F0F0F0',
+    flex: 1,
   },
   headerCell: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8F9FA',
+    borderBottomWidth: 0,
   },
   headerText: {
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#2C3E50',
+    fontSize: 15,
+    textTransform: 'lowercase',
+    textAlign: 'center',
   },
   cellText: {
-    color: '#333',
+    color: '#2C3E50',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    flexWrap: 'wrap',
   },
   deliveredText: {
-    color: '#4CAF50',
+    color: '#28A745',
+    fontWeight: '600',
   },
   notDeliveredText: {
-    color: '#FF5722',
+    color: '#DC3545',
+    fontWeight: '600',
   },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
+  incentiveText: {
+    color: '#2196F3',
+    fontWeight: '600',
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#666',
+  penaltyText: {
+    color: '#F44336',
+    fontWeight: '600',
+  },
+  earningText: {
+    color: '#2C3E50',
+    fontWeight: '600',
   },
 });
 

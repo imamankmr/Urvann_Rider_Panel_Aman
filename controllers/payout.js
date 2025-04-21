@@ -241,7 +241,8 @@ const getPayoutData = async (req, res) => {
         const orderDetails = payouts.map(payout => ({
             txnId: payout.txn_id,
             deliveryStatus: payout['Delivery Status'] || 'N/A',
-            riderCode: payout.rider_code || 'N/A',
+            paymentCount: payout['Payment count'] || 0,
+            remarks: payout['Remarks'] || 'N/A',
             baseEarning: payout['Base Earning'] || 0,
             incentives: (payout['Earning Incentive'] || 0) + 
                       (payout['Weekend Incentive'] || 0) + 
@@ -356,6 +357,7 @@ const getDateWiseEarnings = async (req, res) => {
                                          (payout['Long Distance incentive'] || 0);
             acc[formattedDate].penalties += payout['Penalty'] || 0;
             
+            // Add complete order details
             acc[formattedDate].orders.push({
                 txnId: payout.txn_id,
                 riderCode: payout.rider_code || 'N/A',
@@ -364,7 +366,8 @@ const getDateWiseEarnings = async (req, res) => {
                 incentives: (payout['Earning Incentive'] || 0) + 
                           (payout['Weekend Incentive'] || 0) + 
                           (payout['Long Distance incentive'] || 0),
-                penalties: payout['Penalty'] || 0
+                penalties: payout['Penalty'] || 0,
+                date: formattedDate // Add the date to each order for frontend filtering
             });
 
             return acc;
