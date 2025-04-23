@@ -49,11 +49,10 @@ const payoutSchema = new mongoose.Schema({
   'rider_code': {
     type: String
   },
-  'Payment count': {
-    type: Number,
-    default: 0
-  },
   'Remarks': {
+    type: String
+  },
+  'Payment Date': {
     type: String
   }
 }, {

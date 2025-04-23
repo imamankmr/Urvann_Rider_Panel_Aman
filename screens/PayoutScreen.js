@@ -59,39 +59,16 @@ const PayoutScreen = ({ route }) => {
       let url = `${BACKEND_URL}/api/payout/${driverName}`;
       const params = new URLSearchParams();
 
-      // If no dates provided, use yesterday's date
-      if (!startDate && !endDate) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-
-        const endOfYesterday = new Date(yesterday);
-        endOfYesterday.setHours(23, 59, 59, 999);
-
-        startDate = yesterday;
-        endDate = endOfYesterday;
+      if (startDate && endDate) {
+        params.append("startDate", startDate);
+        params.append("endDate", endDate);
       }
-
-      // Ensure dates are properly formatted
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-
-      params.append("startDate", start.toISOString());
-      params.append("endDate", end.toISOString());
 
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
 
       console.log("Fetching payout data from:", url);
-      console.log("Date range:", {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      });
-
       const response = await axios.get(url, {
         timeout: 10000,
         headers: {
@@ -100,17 +77,23 @@ const PayoutScreen = ({ route }) => {
         },
       });
 
-      //console.log('Payout response:', response.data);
+      // Log complete response data
+      console.log("Complete API Response:", JSON.stringify(response.data, null, 2));
+      
+      // Log order details with all fields
+      console.log("Order Details (All Fields):", response.data.orderDetails.map(order => ({
+        txnId: order.txnId,
+        deliveryStatus: order.deliveryStatus,
+        paymentDate: order.paymentDate,
+        remarks: order.remarks,
+        baseEarning: order.baseEarning,
+        incentives: order.incentives,
+        penalties: order.penalties
+      })));
+
       setPayoutData(response.data);
     } catch (error) {
-      console.error("Detailed error in fetchPayoutData:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        url: error.config?.url,
-        method: error.config?.method,
-      });
-
+      console.error("Error fetching payout data:", error);
       // Set default data in case of error
       setPayoutData({
         driverDetails: {
@@ -135,24 +118,12 @@ const PayoutScreen = ({ route }) => {
       let url = `${BACKEND_URL}/api/payout/date-wise/${driverName}`;
       const params = new URLSearchParams();
 
-      // Ensure dates are properly formatted
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-
-      params.append("startDate", start.toISOString());
-      params.append("endDate", end.toISOString());
+      params.append("startDate", startDate);
+      params.append("endDate", endDate);
 
       url += `?${params.toString()}`;
 
       console.log("Fetching date-wise earnings from:", url);
-      console.log("Date range:", {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      });
-
       const response = await axios.get(url, {
         timeout: 10000,
         headers: {
@@ -161,7 +132,10 @@ const PayoutScreen = ({ route }) => {
         },
       });
 
-      //console.log('Date-wise earnings response:', response.data);
+      // Log the response data to check remarks
+      console.log("Date-wise earnings response:", JSON.stringify(response.data, null, 2));
+      console.log("Sample date-wise orders:", response.data.dateWiseEarnings?.[0]?.orders?.slice(0, 3));
+
       setDateWiseEarnings(response.data.dateWiseEarnings);
     } catch (error) {
       console.error("Error fetching date-wise earnings:", error);
@@ -214,14 +188,17 @@ const PayoutScreen = ({ route }) => {
   const onFromDateChange = (event, selectedDate) => {
     setShowFromDatePicker(false);
     if (selectedDate) {
-      // Set the start of the day for fromDate
-      const startOfDay = new Date(selectedDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      setFromDate(startOfDay);
+      // Format the date as MM/DD/YYYY
+      const formattedDate = selectedDate.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+      setFromDate(selectedDate);
       setHasSelectedStartDate(true);
 
       // Log the selected start date
-      console.log("Selected start date:", startOfDay.toISOString());
+      console.log("Selected start date:", formattedDate);
 
       // Short delay before showing the end date picker
       setTimeout(() => {
@@ -234,20 +211,28 @@ const PayoutScreen = ({ route }) => {
   const onToDateChange = (event, selectedDate) => {
     setShowToDatePicker(false);
     if (selectedDate) {
-      // Set the end of the day for toDate
-      const endOfDay = new Date(selectedDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      setToDate(endOfDay);
+      // Format the date as MM/DD/YYYY
+      const formattedToDate = selectedDate.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+      const formattedFromDate = fromDate.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+      setToDate(selectedDate);
 
       // Log the dates being sent to the API
       console.log("Sending date range to API:", {
-        from: fromDate.toISOString(),
-        to: endOfDay.toISOString(),
+        from: formattedFromDate,
+        to: formattedToDate
       });
 
       // Fetch both overall payout data and date-wise earnings
-      fetchPayoutData(fromDate, endOfDay);
-      fetchDateWiseEarnings(fromDate, endOfDay);
+      fetchPayoutData(formattedFromDate, formattedToDate);
+      fetchDateWiseEarnings(formattedFromDate, formattedToDate);
     }
   };
 
@@ -419,6 +404,19 @@ const PayoutScreen = ({ route }) => {
 
 
   console.log("payout", payoutData.orderDetails)
+
+  // Add a useEffect to log the current payoutData when it changes
+  useEffect(() => {
+    console.log("Current payoutData:", JSON.stringify(payoutData, null, 2));
+    console.log("Sample order details from state:", payoutData.orderDetails?.slice(0, 3));
+  }, [payoutData]);
+
+  // Add a useEffect to log the current dateWiseEarnings when it changes
+  useEffect(() => {
+    console.log("Current dateWiseEarnings:", JSON.stringify(dateWiseEarnings, null, 2));
+    console.log("Sample date-wise orders from state:", dateWiseEarnings[0]?.orders?.slice(0, 3));
+  }, [dateWiseEarnings]);
+
   return (
     <View style={styles.container}>
       {/* Driver Details Card */}
@@ -705,14 +703,17 @@ const PayoutScreen = ({ route }) => {
               <TouchableOpacity
                 onPress={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                style={styles.pageButton}
+                style={[
+                  styles.pageButton,
+                  currentPage === 1 && styles.disabledPageButton
+                ]}
               >
-                <Text style={styles.pageButtonText}>Previous</Text>
+                <Text style={[
+                  styles.pageButtonText,
+                  currentPage === 1 && styles.disabledPageButtonText
+                ]}>Previous</Text>
               </TouchableOpacity>
 
-              {/* <Text style={styles.pageIndicator}>
-                        Page {currentPage}
-                      </Text> */}
               <Text style={styles.pageRangeText}>
                 {modalView === "delivered"
                   ? `Showing ${deliveredStartIndex}–${deliveredEndIndex} of ${totalDeliveredItems} items`
@@ -722,14 +723,55 @@ const PayoutScreen = ({ route }) => {
                   ? `Showing ${penaltyStartIndex}–${penaltyEndIndex} of ${totalPenaltyItems} items`
                   : modalView === "incentives"
                   ? `Showing ${incentiveStartIndex}–${incentiveEndIndex} of ${totalIncentiveItems} items`
+                  : modalView === "orders" && selectedDate
+                  ? `Showing ${startIndex}–${Math.min(currentPage * itemsPerPage, dateWiseEarnings.find(day => day.date === selectedDate)?.orders.length || 0)} of ${dateWiseEarnings.find(day => day.date === selectedDate)?.orders.length || 0} items`
                   : `Showing ${dailyStartIndex}–${dailyEndIndex} of ${totalDailyItems} items`}
               </Text>
 
               <TouchableOpacity
                 onPress={() => setCurrentPage((prev) => prev + 1)}
-                style={styles.pageButton}
+                disabled={
+                  modalView === "delivered" 
+                    ? currentPage * itemsPerPage >= totalDeliveredItems
+                    : modalView === "notDelivered"
+                    ? currentPage * itemsPerPage >= totalNotDeliveredItems
+                    : modalView === "penalties"
+                    ? currentPage * itemsPerPage >= totalPenaltyItems
+                    : modalView === "incentives"
+                    ? currentPage * itemsPerPage >= totalIncentiveItems
+                    : modalView === "orders" && selectedDate
+                    ? currentPage * itemsPerPage >= (dateWiseEarnings.find(day => day.date === selectedDate)?.orders.length || 0)
+                    : currentPage * itemsPerPage >= totalDailyItems
+                }
+                style={[
+                  styles.pageButton,
+                  (modalView === "delivered" 
+                    ? currentPage * itemsPerPage >= totalDeliveredItems
+                    : modalView === "notDelivered"
+                    ? currentPage * itemsPerPage >= totalNotDeliveredItems
+                    : modalView === "penalties"
+                    ? currentPage * itemsPerPage >= totalPenaltyItems
+                    : modalView === "incentives"
+                    ? currentPage * itemsPerPage >= totalIncentiveItems
+                    : modalView === "orders" && selectedDate
+                    ? currentPage * itemsPerPage >= (dateWiseEarnings.find(day => day.date === selectedDate)?.orders.length || 0)
+                    : currentPage * itemsPerPage >= totalDailyItems) && styles.disabledPageButton
+                ]}
               >
-                <Text style={styles.pageButtonText}>Next</Text>
+                <Text style={[
+                  styles.pageButtonText,
+                  (modalView === "delivered" 
+                    ? currentPage * itemsPerPage >= totalDeliveredItems
+                    : modalView === "notDelivered"
+                    ? currentPage * itemsPerPage >= totalNotDeliveredItems
+                    : modalView === "penalties"
+                    ? currentPage * itemsPerPage >= totalPenaltyItems
+                    : modalView === "incentives"
+                    ? currentPage * itemsPerPage >= totalIncentiveItems
+                    : modalView === "orders" && selectedDate
+                    ? currentPage * itemsPerPage >= (dateWiseEarnings.find(day => day.date === selectedDate)?.orders.length || 0)
+                    : currentPage * itemsPerPage >= totalDailyItems) && styles.disabledPageButtonText
+                ]}>Next</Text>
               </TouchableOpacity>
             </View>
 
@@ -802,13 +844,12 @@ const PayoutScreen = ({ route }) => {
                             </View>
                             <View style={styles.tableCell}>
                               <Text style={styles.cellText}>
-                                  
                                 {order.remarks || "-"}
                               </Text>
                             </View>
                             <View style={styles.tableCell}>
                               <Text style={styles.cellText}>
-                                {order.paymentCount || 0}
+                                {order.paymentDate || "-"}
                               </Text>
                             </View>
                           </View>
@@ -880,48 +921,50 @@ const PayoutScreen = ({ route }) => {
 
                     {/* Order Details Table Body */}
                     {modalView === "orders" && selectedDate
-                      ? // Show orders for the selected date from dateWiseEarnings
-                        dateWiseEarnings
-                          .find((day) => day.date === selectedDate)
-                          ?.orders.map((order, index) => (
-                            <View key={index} style={styles.tableRow}>
-                              <View style={styles.tableCell}>
-                                <Text style={styles.cellText}>
-                                  {order.txnId}
-                                </Text>
-                              </View>
-                              <View style={styles.tableCell}>
-                                <Text
-                                  style={[
-                                    styles.cellText,
-                                    order.deliveryStatus === "Z-Delivered"
-                                      ? styles.deliveredText
-                                      : styles.notDeliveredText,
-                                  ]}
-                                >
-                                  {order.deliveryStatus}
-                                </Text>
-                              </View>
-                              <View style={styles.tableCell}>
-                                <Text style={styles.cellText}>
-                                  ₹
-                                  {order.baseEarning +
-                                    order.incentives -
-                                    order.penalties}
-                                </Text>
-                              </View>
-                              <View style={styles.tableCell}>
-                                <Text style={styles.cellText}>
-                                  {order.remarks || "-"}
-                                </Text>
-                              </View>
-                              <View style={styles.tableCell}>
-                                <Text style={styles.cellText}>
-                                  {order.paymentCount || 0}
-                                </Text>
-                              </View>
+                      ? // Show orders for the selected date from dateWiseEarnings with pagination
+                        getPaginatedData(
+                          dateWiseEarnings
+                            .find((day) => day.date === selectedDate)
+                            ?.orders || []
+                        ).map((order, index) => (
+                          <View key={index} style={styles.tableRow}>
+                            <View style={styles.tableCell}>
+                              <Text style={styles.cellText}>
+                                {order.txnId}
+                              </Text>
                             </View>
-                          ))
+                            <View style={styles.tableCell}>
+                              <Text
+                                style={[
+                                  styles.cellText,
+                                  order.deliveryStatus === "Z-Delivered"
+                                    ? styles.deliveredText
+                                    : styles.notDeliveredText,
+                                ]}
+                              >
+                                {order.deliveryStatus}
+                              </Text>
+                            </View>
+                            <View style={styles.tableCell}>
+                              <Text style={styles.cellText}>
+                                ₹
+                                {order.baseEarning +
+                                  order.incentives -
+                                  order.penalties}
+                              </Text>
+                            </View>
+                            <View style={styles.tableCell}>
+                              <Text style={styles.cellText}>
+                                {order.remarks || "-"}
+                              </Text>
+                            </View>
+                            <View style={styles.tableCell}>
+                              <Text style={styles.cellText}>
+                                {order.paymentDate || "-"}
+                              </Text>
+                            </View>
+                          </View>
+                        ))
                       : // Show filtered orders from payoutData for other views
                         getPaginatedData(
                           payoutData.orderDetails
@@ -989,33 +1032,13 @@ const PayoutScreen = ({ route }) => {
                                 </View>
                                 <View style={styles.tableCell}>
                                   <Text style={styles.cellText}>
-                                    {order.paymentCount || 0}
+                                    {order.paymentDate || "-"}
                                   </Text>
                                 </View>
                               </View>
                             ))
                         )}
                   </View>
-                  {/* <View style={styles.paginationContainer}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                      style={styles.pageButton}
-                    >
-                      <Text style={styles.pageButtonText}>Previous</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-                    <TouchableOpacity
-                      onPress={() => setCurrentPage((prev) => prev + 1)}
-                      style={styles.pageButton}
-                    >
-                      <Text style={styles.pageButtonText}>Next</Text>
-                    </TouchableOpacity>
-                  </View> */}
                 </ScrollView>
               )}
             </ScrollView>
@@ -1035,7 +1058,6 @@ const styles = StyleSheet.create({
   paginationContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    // alignItems: "center",
     marginTop: 10,
   },
   pageButton: {
@@ -1431,7 +1453,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2C3E50",
     fontSize: 15,
-    // textTransform: 'lowercase',
     textAlign: "center",
   },
   cellText: {
@@ -1460,6 +1481,13 @@ const styles = StyleSheet.create({
   earningText: {
     color: "#2C3E50",
     fontWeight: "600",
+  },
+  disabledPageButton: {
+    backgroundColor: '#cccccc',
+    opacity: 0.5,
+  },
+  disabledPageButtonText: {
+    color: '#666666',
   },
 });
 

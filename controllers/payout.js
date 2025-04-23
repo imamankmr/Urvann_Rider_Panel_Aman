@@ -238,17 +238,29 @@ const getPayoutData = async (req, res) => {
             : 0;
 
         // Combine payout details
-        const orderDetails = payouts.map(payout => ({
-            txnId: payout.txn_id,
-            deliveryStatus: payout['Delivery Status'] || 'N/A',
-            paymentCount: payout['Payment count'] || 0,
-            remarks: payout['Remarks'] || 'N/A',
-            baseEarning: payout['Base Earning'] || 0,
-            incentives: (payout['Earning Incentive'] || 0) + 
-                      (payout['Weekend Incentive'] || 0) + 
-                      (payout['Long Distance incentive'] || 0),
-            penalties: payout['Penalty'] || 0
-        }));
+        const orderDetails = payouts.map(payout => {
+            // Log each payout to see what fields are available
+            console.log('Processing payout:', {
+                txn_id: payout['txn_id'],
+                remarks: payout['Remarks'],
+                paymentDate: payout['Payment Date']
+            });
+
+            return {
+                txnId: payout['txn_id'],
+                deliveryStatus: payout['Delivery Status'] || 'N/A',
+                paymentDate: payout['Payment Date'] || 'N/A',
+                remarks: payout['Remarks'] || 'N/A',
+                baseEarning: payout['Base Earning'] || 0,
+                incentives: (payout['Earning Incentive'] || 0) + 
+                          (payout['Weekend Incentive'] || 0) + 
+                          (payout['Long Distance incentive'] || 0),
+                penalties: payout['Penalty'] || 0,
+            };
+        });
+
+        // Log sample of processed orders
+        console.log('Sample processed orders:', orderDetails.slice(0, 2));
 
         // Get driver details from the first payout record
         const driverDetails = payouts.length > 0 ? {
@@ -357,18 +369,21 @@ const getDateWiseEarnings = async (req, res) => {
                                          (payout['Long Distance incentive'] || 0);
             acc[formattedDate].penalties += payout['Penalty'] || 0;
             
-            // Add complete order details
-            acc[formattedDate].orders.push({
-                txnId: payout.txn_id,
-                riderCode: payout.rider_code || 'N/A',
+            // Add order details with new fields
+            const orderDetails = {
+                txnId: payout['txn_id'],
+                riderCode: payout['rider_code'] || 'N/A',
                 deliveryStatus: payout['Delivery Status'] || 'N/A',
                 baseEarning: payout['Base Earning'] || 0,
                 incentives: (payout['Earning Incentive'] || 0) + 
                           (payout['Weekend Incentive'] || 0) + 
                           (payout['Long Distance incentive'] || 0),
                 penalties: payout['Penalty'] || 0,
-                date: formattedDate // Add the date to each order for frontend filtering
-            });
+                paymentDate: payout['Payment Date'] || 'N/A',
+                remarks: payout['Remarks'] || 'N/A'
+            };
+            
+            acc[formattedDate].orders.push(orderDetails);
 
             return acc;
         }, {});
