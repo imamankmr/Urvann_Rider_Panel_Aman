@@ -161,6 +161,7 @@ const getPayoutData = async (req, res) => {
                     baseEarning: 0,
                     incentives: 0,
                     penalties: 0,
+                    paidAmount: 0,
                     delivered: 0,
                     notDelivered: 0
                 };
@@ -170,7 +171,7 @@ const getPayoutData = async (req, res) => {
                                   (payout['Weekend Incentive'] || 0) + 
                                   (payout['Long Distance incentive'] || 0);
             acc[date].penalties += payout['Penalty'] || 0;
-            
+            acc[date].paidAmount += payout['Paid Amount'] || 0;
             if (payout['Delivery Status'] === 'Z-Delivered') {
                 acc[date].delivered += 1;
             } else {
@@ -195,8 +196,11 @@ const getPayoutData = async (req, res) => {
         const totalPenalties = payouts.reduce((sum, payout) => {
             return sum + (payout['Penalty'] || 0);
         }, 0);
+        
+        const totalPaidAmount = payouts.reduce((sum, payout) => {
+            return sum + (payout['Paid Amount'] || 0);}, 0);
 
-        const netEarnings = totalEarnings + totalIncentives - totalPenalties;
+        const netEarnings = totalEarnings + totalIncentives - totalPenalties ;
 
         // Calculate delivery statistics
         const delivered = payouts.filter(p => p['Delivery Status'] === 'Z-Delivered').length;
@@ -209,7 +213,8 @@ const getPayoutData = async (req, res) => {
             totalPenalties,
             netEarnings,
             delivered,
-            notDelivered
+            notDelivered,
+            totalPaidAmount
         });
 
         // Get all-time totals for the driver with options
@@ -228,14 +233,19 @@ const getPayoutData = async (req, res) => {
                             ]
                         }
                     },
-                    totalPenalties: { $sum: { $ifNull: ['$Penalty', 0] } }
+                    totalPenalties: { $sum: { $ifNull: ['$Penalty', 0] } },
+                    totalPaidAmount: { $sum: { $ifNull: ['$Paid Amount', 0] } }
                 }
             }
         ], { maxTimeMS: 30000 });
-
+        
         const lifetimeEarnings = allTimeTotals.length > 0 
-            ? allTimeTotals[0].totalBaseEarnings + allTimeTotals[0].totalIncentives - allTimeTotals[0].totalPenalties
+            ? allTimeTotals[0].totalBaseEarnings + 
+              allTimeTotals[0].totalIncentives - 
+              allTimeTotals[0].totalPenalties - 
+              allTimeTotals[0].totalPaidAmount
             : 0;
+        
 
         // Combine payout details
         const orderDetails = payouts.map(payout => {
@@ -256,6 +266,7 @@ const getPayoutData = async (req, res) => {
                           (payout['Weekend Incentive'] || 0) + 
                           (payout['Long Distance incentive'] || 0),
                 penalties: payout['Penalty'] || 0,
+                paidAmount: payout['Paid Amount'] || 0,
             };
         });
 
@@ -283,6 +294,7 @@ const getPayoutData = async (req, res) => {
             incentives: totalIncentives,
             penalties: totalPenalties,
             netEarnings: netEarnings,
+            paidAmount: totalPaidAmount,
             lifetimeEarnings: lifetimeEarnings,
             orderDetails: orderDetails
         };
@@ -301,6 +313,8 @@ const getPayoutData = async (req, res) => {
         });
     }
 }
+
+
 
 const getDateWiseEarnings = async (req, res) => {
     try {
@@ -359,6 +373,7 @@ const getDateWiseEarnings = async (req, res) => {
                     baseEarning: 0,
                     incentives: 0,
                     penalties: 0,
+                    paidAmount: 0,
                     orders: []
                 };
             }
@@ -368,6 +383,7 @@ const getDateWiseEarnings = async (req, res) => {
                                          (payout['Weekend Incentive'] || 0) + 
                                          (payout['Long Distance incentive'] || 0);
             acc[formattedDate].penalties += payout['Penalty'] || 0;
+            acc[formattedDate].paidAmount += payout['Paid Amount'] || 0;
             
             // Add order details with new fields
             const orderDetails = {
@@ -380,6 +396,7 @@ const getDateWiseEarnings = async (req, res) => {
                           (payout['Long Distance incentive'] || 0),
                 penalties: payout['Penalty'] || 0,
                 paymentDate: payout['Payment Date'] || 'N/A',
+                paidAmount: payout['Paid Amount'] || 0,
                 remarks: payout['Remarks'] || 'N/A'
             };
             
@@ -435,6 +452,7 @@ const getDateWiseEarnings = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     summary,

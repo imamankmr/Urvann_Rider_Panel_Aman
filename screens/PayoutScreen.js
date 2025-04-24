@@ -420,6 +420,7 @@ const PayoutScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       {/* Driver Details Card */}
+      <ScrollView style={styles.dateScrollView}>
       <View style={styles.driverCard}>
         <View style={styles.driverInfoContainer}>
           <View style={styles.driverBasicInfo}>
@@ -437,7 +438,7 @@ const PayoutScreen = ({ route }) => {
             </View>
           </View>
           <View style={styles.totalEarningsContainer}>
-            <Text style={styles.totalEarningsLabel}>Total Earnings</Text>
+            <Text style={styles.totalEarningsLabel}>Balance</Text>
             <View style={styles.totalEarningsCard}>
               <Text style={styles.totalEarningsAmount}>
                 ₹{payoutData.lifetimeEarnings}
@@ -651,7 +652,7 @@ const PayoutScreen = ({ route }) => {
           </TouchableOpacity>
         </View>
       </View>
-
+      </ScrollView>
       {/* Order Details Modal */}
       <Modal
         visible={showOrderDetailsModal}
@@ -1398,6 +1399,11 @@ const styles = StyleSheet.create({
     color: "#6C757D",
   },
   modalScrollView: {
+    flex: 1,
+    width: "100%",
+    paddingLeft: "20px",
+  },
+  dateScrollView: {
     flex: 1,
     width: "100%",
     paddingLeft: "20px",

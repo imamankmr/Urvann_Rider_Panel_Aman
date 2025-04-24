@@ -54,7 +54,11 @@ const payoutSchema = new mongoose.Schema({
   },
   'Payment Date': {
     type: String
-  }
+  },
+  'Paid Amount': {
+    type: Number,
+    default: 0
+  },
 }, {
   timestamps: true
 });
