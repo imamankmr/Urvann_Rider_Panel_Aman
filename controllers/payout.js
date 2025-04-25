@@ -127,6 +127,7 @@ const getPayoutData = async (req, res) => {
                 notDelivered: 0,
                 incentives: 0,
                 penalties: 0,
+                penaltyCount: 0, 
                 netEarnings: 0,
                 lifetimeEarnings: 0,
                 orderDetails: []
@@ -163,15 +164,22 @@ const getPayoutData = async (req, res) => {
                     penalties: 0,
                     paidAmount: 0,
                     delivered: 0,
-                    notDelivered: 0
+                    notDelivered: 0,
+                    penaltyCount: 0 
                 };
             }
             acc[date].baseEarning += payout['Base Earning'] || 0;
             acc[date].incentives += (payout['Earning Incentive'] || 0) + 
-                                  (payout['Weekend Incentive'] || 0) + 
-                                  (payout['Long Distance incentive'] || 0);
+                                    (payout['Weekend Incentive'] || 0) + 
+                                    (payout['Long Distance incentive'] || 0);
             acc[date].penalties += payout['Penalty'] || 0;
             acc[date].paidAmount += payout['Paid Amount'] || 0;
+            
+           
+            if ((payout['Penalty'] || 0) > 0) {
+                acc[date].penaltyCount += 1; 
+            }
+
             if (payout['Delivery Status'] === 'Z-Delivered') {
                 acc[date].delivered += 1;
             } else {
@@ -198,13 +206,17 @@ const getPayoutData = async (req, res) => {
         }, 0);
         
         const totalPaidAmount = payouts.reduce((sum, payout) => {
-            return sum + (payout['Paid Amount'] || 0);}, 0);
+            return sum + (payout['Paid Amount'] || 0);
+        }, 0);
 
         const netEarnings = totalEarnings + totalIncentives - totalPenalties ;
 
         // Calculate delivery statistics
         const delivered = payouts.filter(p => p['Delivery Status'] === 'Z-Delivered').length;
         const notDelivered = payouts.filter(p => p['Delivery Status'] !== 'Z-Delivered').length;
+
+        // Calculate total penalty count
+        const penaltyCount = payouts.filter(p => (p['Penalty'] || 0) > 0).length;
 
         // Log the calculations
         console.log('Earnings calculations:', {
@@ -214,7 +226,8 @@ const getPayoutData = async (req, res) => {
             netEarnings,
             delivered,
             notDelivered,
-            totalPaidAmount
+            totalPaidAmount,
+            penaltyCount 
         });
 
         // Get all-time totals for the driver with options
@@ -267,6 +280,7 @@ const getPayoutData = async (req, res) => {
                           (payout['Long Distance incentive'] || 0),
                 penalties: payout['Penalty'] || 0,
                 paidAmount: payout['Paid Amount'] || 0,
+                penaltyCount: (payout['Penalty'] || 0) > 0 ? 1 : 0 
             };
         });
 
@@ -293,6 +307,7 @@ const getPayoutData = async (req, res) => {
             notDelivered: notDelivered,
             incentives: totalIncentives,
             penalties: totalPenalties,
+            penaltyCount: penaltyCount, 
             netEarnings: netEarnings,
             paidAmount: totalPaidAmount,
             lifetimeEarnings: lifetimeEarnings,
@@ -312,7 +327,7 @@ const getPayoutData = async (req, res) => {
             stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
         });
     }
-}
+};
 
 
 

@@ -51,8 +51,7 @@ const PayoutScreen = ({ route }) => {
     return data.slice(start, start + itemsPerPage);
   };
 
-  console.log("toDate",toDate);
-  console.log("fromDate",fromDate);
+  
 
   const fetchPayoutData = async (startDate = null, endDate = null) => {
     try {
@@ -343,7 +342,7 @@ const PayoutScreen = ({ route }) => {
     setShowOrderDetailsModal(true);
   };
 
-  console.log("modelview", modalView);
+  
   const handleDatePress = (date) => {
     setSelectedDate(date);
     setModalView("orders");
@@ -377,8 +376,7 @@ const PayoutScreen = ({ route }) => {
   const startIndex = (currentPage - 1) * itemsPerPage + 1;
 
 
-  console.log("date wise earn",dateWiseEarnings);
-
+ 
   // Total Daily Items (used in date-wise earnings view)
   const totalDailyItems = dateWiseEarnings.length;
   const dailyStartIndex = startIndex;
@@ -401,7 +399,7 @@ const PayoutScreen = ({ route }) => {
   );
 
   // Penalty Orders
-  const totalPenaltyItems = payoutData.penalties;
+  const totalPenaltyItems = payoutData.penaltyCount;
   const penaltyStartIndex = startIndex;
   const penaltyEndIndex = Math.min(
     currentPage * itemsPerPage,
@@ -416,8 +414,6 @@ const PayoutScreen = ({ route }) => {
     totalIncentiveItems
   );
 
-
-  console.log("payout", payoutData.orderDetails)
 
   // Add a useEffect to log the current payoutData when it changes
   useEffect(() => {
