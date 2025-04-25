@@ -146,9 +146,22 @@ const PayoutScreen = ({ route }) => {
   const handleTabPress = (tab) => {
     setSelectedTab(tab);
     if (tab === "Select Date") {
+      const today = new Date();
+      const startOfToday = new Date(today);
+      startOfToday.setHours(0, 0, 0, 0);
+  
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+  
       setIsSelectingStartDate(true);
       setHasSelectedStartDate(false);
-      // setShowFromDatePicker(true);
+      // setFromDate(today);
+      // setToDate(today);
+  
+      // 🔥 Fetch today's data
+      fetchPayoutData(startOfToday, endOfToday);
+      fetchDateWiseEarnings(startOfToday, endOfToday);
+     
     } else {
       const today = new Date();
       switch (tab) {
@@ -184,6 +197,7 @@ const PayoutScreen = ({ route }) => {
       }
     }
   };
+
 
   const onFromDateChange = (event, selectedDate) => {
     setShowFromDatePicker(false);
